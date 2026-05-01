@@ -1,0 +1,531 @@
+/*
+Theme Name: Printonet Theme
+Theme URI: https://printonet.example
+Author: Printonet
+Description: Pets-inspired editorial WooCommerce storefront for Printonet stores.
+Version: 0.1.0
+Template: storefront
+Text Domain: printonet-theme
+*/
+
+:root {
+  --printonet-primary: #111111;
+  --printonet-secondary: #ffffff;
+  --printonet-surface: #f6f4ec;
+  --printonet-soft: #f5f7fb;
+  --printonet-text: #171717;
+  --printonet-muted: #666;
+  --printonet-radius: 12px;
+  --printonet-gap: clamp(0.9rem, 1.5vw, 1.25rem);
+}
+
+body {
+  color: var(--printonet-text);
+  background: #fff;
+}
+
+.site-main {
+  margin-top: 0;
+}
+
+.col-full,
+.site-content .col-full,
+.site-header .col-full,
+.site-footer .col-full {
+  max-width: 1440px;
+  width: min(1440px, calc(100% - 2rem));
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.printonet-pets-home {
+  display: grid;
+  gap: 1.25rem;
+  padding-bottom: 1.5rem;
+}
+
+.printonet-pets-shell {
+  width: min(1440px, calc(100% - 2rem));
+  margin: 0 auto;
+}
+
+.printonet-pets-hero-grid {
+  display: grid;
+  grid-template-columns: 1.55fr 1fr;
+  gap: var(--printonet-gap);
+  align-items: stretch;
+}
+
+.printonet-pets-hero,
+.printonet-pets-promo {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--printonet-radius);
+  background: #ddd;
+}
+
+.printonet-pets-hero {
+  min-height: 540px;
+}
+
+.printonet-pets-hero img,
+.printonet-pets-promo img,
+.printonet-pets-deal-banner img,
+.printonet-pets-story__media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.printonet-pets-hero::after,
+.printonet-pets-promo::after,
+.printonet-pets-deal-banner::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.58));
+}
+
+.printonet-pets-hero__overlay,
+.printonet-pets-promo__overlay,
+.printonet-pets-deal-banner__overlay {
+  position: absolute;
+  inset: auto 0 0;
+  z-index: 2;
+  color: #fff;
+  padding: clamp(1rem, 3vw, 2.2rem);
+  display: grid;
+  gap: 0.6rem;
+  align-items: start;
+  justify-items: start;
+}
+
+.printonet-pets-hero__overlay h1 {
+  margin: 0;
+  color: #fff;
+  line-height: 1.02;
+  font-size: clamp(2rem, 4.6vw, 3.6rem);
+  max-width: 14ch;
+}
+
+.printonet-pets-hero__overlay p,
+.printonet-pets-deal-banner__overlay p {
+  margin: 0;
+  max-width: 46ch;
+}
+
+.printonet-pets-pill {
+  display: inline-flex;
+  justify-self: start;
+  align-items: center;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.72rem;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  padding: 0.38rem 0.62rem;
+  border-radius: 99px;
+}
+
+.printonet-pets-btn {
+  display: inline-flex;
+  justify-self: start;
+  align-items: center;
+  border: 1px solid #fff;
+  color: #fff;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.72rem;
+  padding: 0.62rem 0.95rem;
+  border-radius: 999px;
+}
+
+.printonet-pets-btn:hover {
+  background: #fff;
+  color: var(--printonet-primary);
+}
+
+.printonet-pets-hero-side {
+  display: grid;
+  gap: var(--printonet-gap);
+}
+
+.printonet-pets-promo {
+  min-height: 260px;
+}
+
+.printonet-pets-promo__overlay h3,
+.printonet-pets-deal-banner__overlay h2 {
+  margin: 0;
+  color: #fff;
+  line-height: 1.1;
+}
+
+.printonet-pets-categories {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: var(--printonet-gap);
+}
+
+.printonet-pets-category {
+  border: 1px solid #e7e7e7;
+  border-radius: var(--printonet-radius);
+  display: grid;
+  justify-items: center;
+  gap: 0.6rem;
+  padding: 0.9rem 0.7rem;
+  background: #fff;
+}
+
+.printonet-pets-category__icon {
+  width: 58px;
+  height: 58px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--printonet-soft);
+  display: grid;
+  place-items: center;
+}
+
+.printonet-pets-category__icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.printonet-pets-category__name {
+  font-weight: 600;
+  color: var(--printonet-text);
+  font-size: 0.95rem;
+  text-align: center;
+}
+
+.printonet-pets-section {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.printonet-pets-section__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 1rem;
+}
+
+.printonet-pets-section__head h2 {
+  margin: 0;
+}
+
+.printonet-pets-section__head a {
+  font-weight: 600;
+}
+
+.printonet-pets-grid {
+  display: grid;
+  gap: var(--printonet-gap);
+}
+
+.printonet-pets-grid--five {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.printonet-pets-grid--three {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.printonet-pets-grid--two {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.printonet-pets-card {
+  background: #f8f9fb;
+  border-radius: var(--printonet-radius);
+  overflow: hidden;
+}
+
+.printonet-pets-card__media {
+  display: block;
+  background: #f1f2f6;
+}
+
+.printonet-pets-card__media img {
+  width: 100%;
+  height: clamp(220px, 24vw, 300px);
+  object-fit: contain;
+  padding: 0.75rem;
+}
+
+.printonet-pets-card__meta {
+  padding: 0.7rem 0.75rem 0.85rem;
+}
+
+.printonet-pets-card__title {
+  color: var(--printonet-text);
+  display: block;
+  font-weight: 700;
+  line-height: 1.25;
+  margin-bottom: 0.2rem;
+}
+
+.printonet-pets-card__price {
+  color: var(--printonet-muted);
+  font-size: 0.88rem;
+}
+
+.printonet-pets-trust {
+  background: #101010;
+  color: #f2f2f2;
+}
+
+.printonet-pets-trust__inner {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--printonet-gap);
+  padding: 1rem 0;
+}
+
+.printonet-pets-trust__inner div {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.printonet-pets-trust__inner strong {
+  color: #fff;
+}
+
+.printonet-pets-trust__inner span {
+  color: #d0d0d0;
+  font-size: 0.88rem;
+}
+
+.printonet-pets-deals {
+  display: grid;
+  grid-template-columns: 1.1fr 1fr;
+  gap: var(--printonet-gap);
+}
+
+.printonet-pets-deal-banner {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--printonet-radius);
+  min-height: 430px;
+}
+
+.printonet-pets-story {
+  border-radius: var(--printonet-radius);
+  overflow: hidden;
+  background: #fff;
+  border: 1px solid #efefef;
+}
+
+.printonet-pets-story__media {
+  display: block;
+  min-height: 220px;
+}
+
+.printonet-pets-story__meta {
+  padding: 0.85rem;
+}
+
+.printonet-pets-story__title {
+  display: block;
+  font-weight: 700;
+  color: var(--printonet-text);
+  margin-bottom: 0.3rem;
+}
+
+.printonet-pets-story__meta p {
+  margin: 0;
+  color: var(--printonet-muted);
+}
+
+.printonet-pets-newsletter {
+  background: var(--printonet-surface);
+}
+
+.printonet-pets-newsletter__inner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.25rem 0;
+}
+
+.printonet-pets-newsletter__inner h2 {
+  margin: 0;
+}
+
+.printonet-pets-newsletter__inner p {
+  margin: 0.2rem 0 0;
+  color: var(--printonet-muted);
+}
+
+.home.blog .site-content > .col-full > .site-main > article,
+.home.blog .site-content > .col-full > .site-main > .woocommerce,
+.home.blog .site-content > .col-full > .site-main > .wp-block-group {
+  display: none;
+}
+
+@media (max-width: 1180px) {
+  .printonet-pets-hero-grid,
+  .printonet-pets-deals {
+    grid-template-columns: 1fr;
+  }
+
+  .printonet-pets-categories,
+  .printonet-pets-grid--five {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .printonet-pets-trust__inner {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .col-full,
+  .site-content .col-full,
+  .site-header .col-full,
+  .site-footer .col-full,
+  .printonet-pets-shell {
+    width: min(1440px, calc(100% - 1rem));
+  }
+
+  .printonet-pets-grid--five,
+  .printonet-pets-grid--three,
+  .printonet-pets-grid--two,
+  .printonet-pets-categories {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .printonet-pets-trust__inner {
+    grid-template-columns: 1fr;
+  }
+
+  .printonet-pets-newsletter__inner {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+
+.printonet-pets-section__head {
+  padding-top: 0.2rem;
+}
+
+.printonet-pets-section__head h2 {
+  font-size: clamp(1.35rem, 2vw, 1.85rem);
+  letter-spacing: -0.01em;
+}
+
+.printonet-pets-section__head a {
+  font-size: 0.86rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--printonet-muted);
+}
+
+.printonet-pets-card {
+  border: 1px solid #e8ebf0;
+  box-shadow: 0 1px 1px rgba(16, 24, 40, 0.03);
+  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+}
+
+.printonet-pets-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 20px rgba(16, 24, 40, 0.08);
+  border-color: #d8dde6;
+}
+
+.printonet-pets-card__media {
+  position: relative;
+  border-bottom: 1px solid #eef1f5;
+}
+
+.printonet-pets-card__badge {
+  position: absolute;
+  top: 0.6rem;
+  left: 0.6rem;
+  z-index: 2;
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  background: rgba(17, 17, 17, 0.82);
+  color: #fff;
+  border-radius: 999px;
+  padding: 0.24rem 0.5rem;
+}
+
+.printonet-pets-card__title {
+  margin-bottom: 0.35rem;
+  font-size: 1.02rem;
+}
+
+.printonet-pets-card__price {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #1f2937;
+  margin-bottom: 0.65rem;
+}
+
+.printonet-pets-card__cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.46rem 0.72rem;
+  border-radius: 999px;
+  border: 1px solid #d6dbe4;
+  color: #2f3747;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.printonet-pets-card__cta:hover {
+  border-color: #111;
+  color: #111;
+}
+
+.printonet-pets-brand-strip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem;
+  background: #f8fafd;
+  border: 1px solid #e7ebf2;
+  border-radius: var(--printonet-radius);
+  padding: 0.85rem 1rem;
+}
+
+.printonet-pets-brand-strip span {
+  color: var(--printonet-muted);
+  font-size: 0.86rem;
+}
+
+.printonet-pets-brand-strip strong {
+  font-size: 0.9rem;
+  letter-spacing: 0.08em;
+  color: #253145;
+}
+
+.printonet-pets-category {
+  transition: border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.printonet-pets-category:hover {
+  transform: translateY(-2px);
+  border-color: #d8dde6;
+  box-shadow: 0 8px 14px rgba(16, 24, 40, 0.06);
+}
+
+@media (max-width: 760px) {
+  .printonet-pets-brand-strip {
+    gap: 0.6rem;
+  }
+
+  .printonet-pets-brand-strip strong {
+    font-size: 0.8rem;
+  }
+}

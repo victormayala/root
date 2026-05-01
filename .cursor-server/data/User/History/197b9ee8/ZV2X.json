@@ -1,0 +1,14 @@
+{
+    "window.commandCenter": true,
+    "git.confirmSync": false,
+    "git.enableSmartCommit": true,
+    "workbench.colorTheme": "Default Light Modern",
+    "[json]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    "remote.SSH.remotePlatform": {
+        "printonet-vps": "linux",
+        "ssh root@177.7.32.229": "linux"
+    },
+    "workbench.editor.enablePreview": false
+}

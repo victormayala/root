@@ -1,0 +1,11 @@
+2026-05-01 00:29:18.065 [info] Constructor: scheduling initial write
+2026-05-01 00:29:18.099 [info] Lease change event received {"reason":"cursor_mcp_lease_settings"}
+2026-05-01 00:29:18.231 [info] Lease change event received {"reason":"cursor_mcp_lease_settings"}
+2026-05-01 00:29:18.401 [info] Lease change event received {"reason":"cursor_mcp_lease_settings"}
+2026-05-01 00:29:18.542 [info] Lease change event received {"reason":"cursor_mcp_lease_settings"}
+2026-05-01 00:29:18.543 [info] fetchAndWrite: lease returned 26 tools across 1 clients
+2026-05-01 00:29:18.892 [info] Incremental write: 1 changed, 0 removed, 0 unchanged {"changedServerCount":1,"changedServers":[{"serverIdentifier":"cursor-ide-browser","sanitizedId":"cursor-ide-browser","toolCount":26}],"removedServerCount":0,"removedServerSanitizedIds":[],"unchangedServerCount":0,"totalServerCount":1,"mcpFsStructuredLogOptIn":true}
+2026-05-01 00:29:19.086 [info] fetchAndWrite: lease returned 26 tools across 1 clients
+2026-05-01 00:29:19.570 [info] fetchAndWrite: lease returned 26 tools across 1 clients
+2026-05-01 00:29:19.972 [info] fetchAndWrite: lease returned 26 tools across 1 clients
+2026-05-01 00:29:20.188 [info] fetchAndWrite: lease returned 26 tools across 1 clients

@@ -1,0 +1,20 @@
+<?php
+/**
+ * Plugin Name: Printonet Core (MU)
+ * Description: Core network logic for Printonet multi-tenant stores.
+ * Author: Printonet
+ * Version: 0.1.0
+ */
+
+if (!defined('ABSPATH')) {
+    exit;
+}
+
+define('PRINTONET_CORE_VERSION', '0.1.0');
+define('PRINTONET_CORE_PATH', __DIR__);
+
+require_once PRINTONET_CORE_PATH . '/includes/class-printonet-provisioning-api.php';
+
+add_action('muplugins_loaded', static function () {
+    Printonet_Provisioning_API::init();
+});

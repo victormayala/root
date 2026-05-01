@@ -1,0 +1,30 @@
+<?php
+/**
+ * Plugin Name: Printonet Core (MU)
+ * Description: Core network logic for Printonet multi-tenant stores.
+ * Author: Printonet
+ * Version: 0.1.0
+ */
+
+if (!defined('ABSPATH')) {
+    exit;
+}
+
+define('PRINTONET_CORE_VERSION', '0.1.0');
+define('PRINTONET_CORE_PATH', __DIR__);
+
+require_once PRINTONET_CORE_PATH . '/includes/class-printonet-branding.php';
+require_once PRINTONET_CORE_PATH . '/includes/class-printonet-provisioning-api.php';
+require_once PRINTONET_CORE_PATH . '/includes/class-printonet-request-auth.php';
+require_once PRINTONET_CORE_PATH . '/includes/class-printonet-sync-store.php';
+require_once PRINTONET_CORE_PATH . '/includes/class-printonet-supplier-sync.php';
+require_once PRINTONET_CORE_PATH . '/includes/class-printonet-customizer-order-meta.php';
+require_once PRINTONET_CORE_PATH . '/includes/class-printonet-tenant-control.php';
+
+add_action('muplugins_loaded', static function () {
+    Printonet_Sync_Store::init();
+    Printonet_Provisioning_API::init();
+    Printonet_Supplier_Sync::init();
+    Printonet_Customizer_Order_Meta::init();
+    Printonet_Tenant_Control::init();
+});

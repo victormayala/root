@@ -1,0 +1,51 @@
+2026-04-29 19:17:36.332 [info] Extension host with pid 14611 started
+2026-04-29 19:17:36.332 [info] [ExtHostShellExec] Detecting sandbox support...
+2026-04-29 19:17:36.332 [info] [ExtHostShellExec] Platform: linux, Shell type: unknown
+2026-04-29 19:17:36.332 [info] [ExtHostShellExec] dirname: /root/.cursor-server/bin/linux-x64/3e548838cf824b70851dd3ef27d0c6aae371b3f0/out/vs/workbench/api/node
+2026-04-29 19:17:36.332 [info] [ExtHostShellExec] Sandbox helper path: /root/.cursor-server/bin/linux-x64/3e548838cf824b70851dd3ef27d0c6aae371b3f0/resources/helpers/cursorsandbox
+2026-04-29 19:17:36.332 [info] [ExtHostShellExec] process.resourcesPath: undefined
+2026-04-29 19:17:36.332 [info] [ExtHostShellExec] process.execPath: /root/.cursor-server/bin/linux-x64/3e548838cf824b70851dd3ef27d0c6aae371b3f0/node
+2026-04-29 19:17:36.332 [info] [ExtHostShellExec] ripgrep path for sandboxing: /root/.cursor-server/bin/linux-x64/3e548838cf824b70851dd3ef27d0c6aae371b3f0/resources/helpers/rg
+2026-04-29 19:17:36.333 [info] [shell-exec:sandbox] [isSandboxHelperSupported] Starting sandbox support check...
+2026-04-29 19:17:36.333 [info] [shell-exec:sandbox] [checkBinaryAvailable] Resolved binary path: /root/.cursor-server/bin/linux-x64/3e548838cf824b70851dd3ef27d0c6aae371b3f0/resources/helpers/cursorsandbox
+2026-04-29 19:17:36.333 [info] [shell-exec:sandbox] [checkBinaryAvailable] Binary path exists: true
+2026-04-29 19:17:36.333 [info] [shell-exec:sandbox] [isSandboxHelperSupported] Running preflight with binary: /root/.cursor-server/bin/linux-x64/3e548838cf824b70851dd3ef27d0c6aae371b3f0/resources/helpers/cursorsandbox
+2026-04-29 19:17:36.333 [info] [shell-exec:sandbox] [isSandboxHelperSupported] CWD: /root
+2026-04-29 19:17:36.333 [info] [shell-exec:sandbox] [isSandboxHelperSupported] Preflight succeeded, sandbox supported!
+2026-04-29 19:17:36.333 [info] [ExtHostShellExec] Sandbox support detected: true, platform: linux, kernelVersion: 6.8.0-107-generic
+2026-04-29 19:17:36.418 [info] [ExtHostShellExec] Initializing terminal executor with userTerminalHint: undefined
+2026-04-29 19:17:36.432 [info] ExtensionService#_doActivateExtension vscode.emmet, startup: false, activationEvent: 'onLanguage'
+2026-04-29 19:17:36.588 [info] Extension activated success: vscode.emmet — 43ms (code loading: 28ms, activate call: 15ms, activate resolved: 0ms)
+2026-04-29 19:17:36.589 [info] ExtensionService#_doActivateExtension anysphere.cursor-agent-exec, startup: true, activationEvent: '*'
+2026-04-29 19:17:36.589 [info] ExtensionService#_doActivateExtension anysphere.cursor-checkout, startup: true, activationEvent: '*'
+2026-04-29 19:17:36.589 [info] ExtensionService#_doActivateExtension anysphere.cursor-polyfills-remote, startup: true, activationEvent: '*'
+2026-04-29 19:17:36.589 [info] ExtensionService#_doActivateExtension vscode.git-base, startup: true, activationEvent: '*', root cause: vscode.git
+2026-04-29 19:17:37.079 [info] ExtensionService#_doActivateExtension anysphere.cursor-mcp, startup: false, activationEvent: 'api', root cause: anysphere.cursor-agent-exec
+2026-04-29 19:17:37.314 [info] Extension activated success: anysphere.cursor-checkout — 634ms (code loading: 400ms, activate call: 0ms, activate resolved: 234ms)
+2026-04-29 19:17:37.314 [info] Extension activated success: anysphere.cursor-polyfills-remote — 667ms (code loading: 433ms, activate call: 0ms, activate resolved: 234ms)
+2026-04-29 19:17:37.314 [info] Extension activated success: vscode.git-base — 669ms (code loading: 435ms, activate call: 0ms, activate resolved: 234ms)
+2026-04-29 19:17:37.314 [info] ExtensionService#_doActivateExtension vscode.git, startup: true, activationEvent: '*'
+2026-04-29 19:17:37.314 [info] ExtensionService#_doActivateExtension vscode.github, startup: true, activationEvent: '*'
+2026-04-29 19:17:37.455 [info] Extension activated success: vscode.github — 66ms (code loading: 58ms, activate call: 1ms, activate resolved: 7ms)
+2026-04-29 19:17:37.507 [info] Extension activated success: vscode.git — 120ms (code loading: 41ms, activate call: 2ms, activate resolved: 77ms)
+2026-04-29 19:17:37.524 [info] Extension activated success: anysphere.cursor-mcp — 333ms (code loading: 234ms, activate call: 1ms, activate resolved: 98ms)
+2026-04-29 19:17:37.634 [info] Extension activated success: anysphere.cursor-agent-exec — 948ms (code loading: 385ms, activate call: 8ms, activate resolved: 555ms)
+2026-04-29 19:17:37.634 [info] Eager extensions activated
+2026-04-29 19:17:37.635 [info] ExtensionService#_doActivateExtension anysphere.cursor-commits, startup: false, activationEvent: 'onStartupFinished'
+2026-04-29 19:17:37.635 [info] ExtensionService#_doActivateExtension anysphere.cursor-explorer, startup: false, activationEvent: 'onStartupFinished'
+2026-04-29 19:17:37.635 [info] ExtensionService#_doActivateExtension anysphere.cursor-retrieval, startup: false, activationEvent: 'onStartupFinished'
+2026-04-29 19:17:37.636 [info] ExtensionService#_doActivateExtension anysphere.cursor-shadow-workspace, startup: false, activationEvent: 'onStartupFinished'
+2026-04-29 19:17:37.636 [info] ExtensionService#_doActivateExtension vscode.debug-auto-launch, startup: false, activationEvent: 'onStartupFinished'
+2026-04-29 19:17:37.636 [info] ExtensionService#_doActivateExtension vscode.merge-conflict, startup: false, activationEvent: 'onStartupFinished'
+2026-04-29 19:17:38.130 [info] [ExtHostCursorExplorerProviderService] ExplorerProvider registered in ext host
+2026-04-29 19:17:38.151 [info] Extension activated success: anysphere.cursor-explorer — 129ms (code loading: 123ms, activate call: 1ms, activate resolved: 5ms)
+2026-04-29 19:17:38.152 [info] Extension activated success: anysphere.cursor-shadow-workspace — 391ms (code loading: 388ms, activate call: 0ms, activate resolved: 3ms)
+2026-04-29 19:17:38.152 [info] Extension activated success: vscode.debug-auto-launch — 392ms (code loading: 389ms, activate call: 0ms, activate resolved: 3ms)
+2026-04-29 19:17:38.152 [info] Extension activated success: vscode.merge-conflict — 410ms (code loading: 404ms, activate call: 3ms, activate resolved: 3ms)
+2026-04-29 19:17:38.152 [info] Extension activated success: anysphere.cursor-retrieval — 361ms (code loading: 341ms, activate call: 2ms, activate resolved: 18ms)
+2026-04-29 19:17:38.152 [info] Extension activated success: anysphere.cursor-commits — 144ms (code loading: 122ms, activate call: 0ms, activate resolved: 22ms)
+2026-04-29 19:17:38.211 [info] [ExtHostCursorExplorerProviderService] Main thread provider registration acknowledged
+2026-04-29 19:18:04.382 [info] Extension host terminating: received terminate message from renderer
+2026-04-29 19:18:04.384 [info] [ExtHostCursorExplorerProviderService] ExplorerProvider unregistered in ext host
+2026-04-29 19:18:04.396 [error] [ExtHostCursorExplorerProviderService] Main thread provider unregistration failed Canceled
+2026-04-29 19:18:04.396 [info] Extension host with pid 14611 exiting with code 0

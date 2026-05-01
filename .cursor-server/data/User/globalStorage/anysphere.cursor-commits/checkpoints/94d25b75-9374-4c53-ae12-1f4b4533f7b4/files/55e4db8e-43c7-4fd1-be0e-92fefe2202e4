@@ -1,0 +1,48 @@
+# Printonet Multi-Tenant Platform
+
+Bootstrap for a centralized WordPress Multisite + WooCommerce tenant engine on a VPS.
+
+## What this includes
+
+- VPS bootstrap script for Ubuntu (Nginx, PHP-FPM, MariaDB, Redis, WP-CLI)
+- WordPress Multisite install script (subdomain mode)
+- Shared MU plugin scaffold (`printonet-core`) with tenant provisioning API
+- Supplier sync queue endpoint with first-party internal supplier adapter
+- Shared storefront theme scaffold (`printonet-storefront`)
+- Environment template for secure configuration
+
+## Directory layout
+
+- `scripts/` - server and app bootstrap scripts
+- `config/` - Nginx/PHP snippets
+- `wp-content/mu-plugins/printonet-core/` - shared business logic (all tenants)
+- `wp-content/themes/printonet-storefront/` - shared storefront theme
+- `docs/` - API contracts and implementation notes
+
+## Quick start
+
+1. Copy env template and fill values:
+   - `cp .env.example .env`
+2. Run base bootstrap:
+   - `sudo bash scripts/bootstrap_vps.sh .env`
+3. Install WordPress Multisite:
+   - `sudo bash scripts/install_wp_multisite.sh .env`
+4. Configure TLS:
+   - `sudo bash scripts/setup_tls.sh .env`
+
+## Next steps
+
+- Point wildcard DNS: `*.your-platform-domain.com` to the VPS IP
+- Add wildcard TLS certificate (DNS challenge for wildcard)
+- Connect your existing "new store" plugin from main Printonet to:
+  - `POST /wp-json/printonet/v1/provision-store`
+- Queue supplier catalog syncs from your main platform:
+  - `POST /wp-json/printonet/v1/suppliers/sync`
+  - defaults to `printonet_internal` when `supplier` is omitted
+- Sign main-platform API requests using HMAC (`X-Printonet-Timestamp`, `X-Printonet-Signature`)
+- Validate supplier credentials before connect:
+  - `POST /wp-json/printonet/v1/suppliers/validate`
+- Track async sync jobs:
+  - `GET /wp-json/printonet/v1/suppliers/sync-status/{job_id}`
+- Receive supplier delta updates (price/stock):
+  - `POST /wp-json/printonet/v1/suppliers/webhook`

@@ -1,0 +1,56 @@
+2026-05-01 00:29:18.361 [error] Error getting repo info: Failed to execute git
+2026-05-01 00:29:18.361 [error] Error: Failed to execute git
+	at URe.<anonymous> (/root/.cursor-server/bin/linux-x64/3e548838cf824b70851dd3ef27d0c6aae371b3f0/extensions/cursor-retrieval/dist/main.js:2:3555649)
+	at Generator.next (<anonymous>)
+	at a (/root/.cursor-server/bin/linux-x64/3e548838cf824b70851dd3ef27d0c6aae371b3f0/extensions/cursor-retrieval/dist/main.js:2:3553184)
+2026-05-01 00:29:18.387 [info] Using existing keys for an index
+2026-05-01 00:29:18.387 [info] InternalRepoInfo constructor with preferredEmbeddingModel 0
+2026-05-01 00:29:18.387 [info] Using existing keys for an index
+2026-05-01 00:29:18.387 [info] InternalRepoInfo constructor with preferredEmbeddingModel 0
+2026-05-01 00:29:18.553 [info] Creating Indexing Repo client:  https://repo42.cursor.sh
+2026-05-01 00:29:18.553 [info] Creating repo client with backend url: https://repo42.cursor.sh
+2026-05-01 00:29:18.553 [info] Using existing keys for an index
+2026-05-01 00:29:18.553 [info] InternalRepoInfo constructor with preferredEmbeddingModel 0
+2026-05-01 00:29:18.630 [error] Error getting repo info: Failed to execute git
+2026-05-01 00:29:18.631 [warning] Failed to get symbolic ref: Failed to execute git
+2026-05-01 00:29:18.636 [warning] Failed to read .git/HEAD: A system error occurred (ENOENT: no such file or directory, open '/root/.git/HEAD')
+2026-05-01 00:29:18.680 [warning] Failed to get branches from remote: Failed to execute git
+2026-05-01 00:29:18.685 [warning] Failed to get default branch from git config: Failed to execute git
+2026-05-01 00:29:18.885 [info] Using existing keys for an index
+2026-05-01 00:29:18.885 [info] InternalRepoInfo constructor with preferredEmbeddingModel 0
+2026-05-01 00:29:18.900 [info] Starting RepoIndexWatcher for repo: 676b0577-0826-4401-8808-f850570ccfba, owner: auth0|user_01JAG6C5XV7SSTMK7BY2KF5EXP
+2026-05-01 00:29:18.900 [error] We currently do not allow indexing the home directory.
+2026-05-01 00:29:18.901 [info] Indexing job successfully done or aborted.
+2026-05-01 00:29:18.901 [info] multiCodebaseIndexingJob dispose
+2026-05-01 00:29:18.901 [info] Aborting indexing job.
+2026-05-01 00:29:18.901 [info] Using existing keys for an index
+2026-05-01 00:29:18.901 [info] InternalRepoInfo constructor with preferredEmbeddingModel 0
+2026-05-01 00:29:18.961 [info] Starting RepoIndexWatcher for repo: 676b0577-0826-4401-8808-f850570ccfba, owner: auth0|user_01JAG6C5XV7SSTMK7BY2KF5EXP
+2026-05-01 00:29:18.962 [error] We currently do not allow indexing the home directory.
+2026-05-01 00:29:18.962 [info] Indexing job successfully done or aborted.
+2026-05-01 00:29:33.818 [error] Error getting git status: Failed to execute git
+2026-05-01 00:29:49.790 [error] Error getting git status: Failed to execute git
+2026-05-01 00:33:25.500 [warning] Failed to get symbolic ref: Failed to execute git
+2026-05-01 00:33:25.500 [error] Error getting branch names: Failed to execute git
+2026-05-01 00:33:25.501 [warning] Failed to get symbolic ref: Failed to execute git
+2026-05-01 00:33:25.501 [error] Error getting branch names: Failed to execute git
+2026-05-01 00:33:25.505 [warning] Failed to read .git/HEAD: A system error occurred (ENOENT: no such file or directory, open '/root/.git/HEAD')
+2026-05-01 00:33:25.510 [warning] Failed to read .git/HEAD: A system error occurred (ENOENT: no such file or directory, open '/root/.git/HEAD')
+2026-05-01 00:33:25.546 [warning] Failed to get branches from remote: Failed to execute git
+2026-05-01 00:33:25.553 [warning] Failed to get branches from remote: Failed to execute git
+2026-05-01 00:33:25.553 [warning] Failed to get default branch from git config: Failed to execute git
+2026-05-01 00:33:25.554 [warning] Failed to get default branch from git config: Failed to execute git
+2026-05-01 00:33:25.885 [error] Error getting branch names: Failed to execute git
+2026-05-01 00:33:25.885 [error] Error getting branch names: Failed to execute git
+2026-05-01 00:37:00.962 [info] multiCodebaseIndexingJob dispose
+2026-05-01 00:37:00.962 [info] Aborting indexing job.
+2026-05-01 00:37:00.962 [error] We currently do not allow indexing the home directory.
+2026-05-01 00:37:00.962 [info] Indexing job successfully done or aborted.
+2026-05-01 00:44:38.039 [warning] Failed to get symbolic ref: Failed to execute git
+2026-05-01 00:44:38.122 [warning] Failed to get default branch from git config: Failed to execute git
+2026-05-01 00:44:42.962 [info] multiCodebaseIndexingJob dispose
+2026-05-01 00:44:42.962 [info] Aborting indexing job.
+2026-05-01 00:44:42.962 [error] We currently do not allow indexing the home directory.
+2026-05-01 00:44:42.962 [info] Indexing job successfully done or aborted.
+2026-05-01 00:44:44.007 [error] Error executing git: fatal: no such branch: 'main'
+, cwd: /root, command: "git rev-list @{u}..HEAD --count"

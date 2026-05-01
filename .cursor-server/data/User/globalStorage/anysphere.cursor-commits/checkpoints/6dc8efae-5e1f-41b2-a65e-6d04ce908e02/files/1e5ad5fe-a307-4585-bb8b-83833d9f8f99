@@ -1,0 +1,94 @@
+<?php
+
+if (!defined('ABSPATH')) {
+    exit;
+}
+
+class Printonet_Provisioning_API
+{
+    public static function init(): void
+    {
+        add_action('rest_api_init', [self::class, 'register_routes']);
+    }
+
+    public static function register_routes(): void
+    {
+        register_rest_route('printonet/v1', '/provision-store', [
+            'methods' => 'POST',
+            'callback' => [self::class, 'provision_store'],
+            'permission_callback' => [self::class, 'authenticate'],
+        ]);
+    }
+
+    public static function authenticate(WP_REST_Request $request): bool
+    {
+        $incoming = (string) $request->get_header('x-printonet-api-key');
+        $expected = defined('PRINTONET_PROVISIONING_API_KEY')
+            ? (string) PRINTONET_PROVISIONING_API_KEY
+            : (string) getenv('PROVISIONING_API_KEY');
+
+        if ($incoming === '' || $expected === '') {
+            return false;
+        }
+
+        return hash_equals($expected, $incoming);
+    }
+
+    public static function provision_store(WP_REST_Request $request): WP_REST_Response
+    {
+        $payload = $request->get_json_params();
+        $required = ['tenant_slug', 'store_name', 'admin_email'];
+
+        foreach ($required as $field) {
+            if (empty($payload[$field])) {
+                return new WP_REST_Response([
+                    'success' => false,
+                    'error' => "Missing required field: {$field}",
+                ], 422);
+            }
+        }
+
+        $tenant_slug = sanitize_title($payload['tenant_slug']);
+        $domain = $tenant_slug . '.' . preg_replace('#^https?://#', '', network_home_url());
+        $domain = preg_replace('#/.*$#', '', $domain);
+
+        if (domain_exists($domain, '/', get_current_network_id())) {
+            return new WP_REST_Response([
+                'success' => false,
+                'error' => 'Tenant already exists',
+            ], 409);
+        }
+
+        $site_id = wpmu_create_blog(
+            $domain,
+            '/',
+            sanitize_text_field($payload['store_name']),
+            1,
+            [],
+            get_current_network_id()
+        );
+
+        if (is_wp_error($site_id)) {
+            return new WP_REST_Response([
+                'success' => false,
+                'error' => $site_id->get_error_message(),
+            ], 500);
+        }
+
+        switch_to_blog((int) $site_id);
+        update_option('blogname', sanitize_text_field($payload['store_name']));
+        update_option('printonet_brand_primary_color', sanitize_hex_color($payload['primary_color'] ?? '#111111'));
+        update_option('printonet_brand_secondary_color', sanitize_hex_color($payload['secondary_color'] ?? '#ffffff'));
+        update_option('printonet_logo_url', esc_url_raw($payload['logo_url'] ?? ''));
+
+        // Ensure shared theme is active for each tenant store.
+        switch_theme('printonet-storefront');
+        restore_current_blog();
+
+        return new WP_REST_Response([
+            'success' => true,
+            'site_id' => $site_id,
+            'store_url' => 'https://' . $domain,
+        ], 201);
+    }
+}

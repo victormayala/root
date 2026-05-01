@@ -1,0 +1,566 @@
+<?php
+
+if (!defined('ABSPATH')) {
+    exit;
+}
+
+class Printonet_Tenant_Control
+{
+    private const CONFIG_VERSION_OPTION = 'printonet_tenant_config_version';
+    private const CRON_HOOK = 'printonet_tenant_pull_sync';
+    private const MAX_LAYOUT_BYTES = 25000;
+    private const MAX_SECTIONS_BYTES = 50000;
+    private const PULL_INTERVAL_OPTION = 'printonet_tenant_pull_interval_minutes';
+    private const CIRCUIT_FAIL_COUNT_OPTION = 'printonet_tenant_pull_fail_count';
+    private const CIRCUIT_OPEN_UNTIL_OPTION = 'printonet_tenant_pull_circuit_open_until';
+    private const CIRCUIT_ALERT_OPTION = 'printonet_tenant_pull_alert';
+    private const CIRCUIT_FAIL_THRESHOLD = 3;
+    private const CIRCUIT_COOLDOWN_SECONDS = 900;
+
+    public static function init(): void
+    {
+        add_filter('cron_schedules', [self::class, 'register_cron_schedules']);
+        add_action('rest_api_init', [self::class, 'register_routes']);
+        add_action('init', [self::class, 'schedule_pull_sync']);
+        add_action(self::CRON_HOOK, [self::class, 'pull_config_from_dashboard']);
+        add_action('init', [self::class, 'migrate_legacy_suspended_page'], 15);
+        add_action('template_redirect', [self::class, 'enforce_suspension_frontend']);
+        add_filter('woocommerce_is_purchasable', [self::class, 'disable_purchase_when_suspended'], 10, 2);
+        add_filter('woocommerce_checkout_registration_enabled', [self::class, 'disable_checkout_registration_when_suspended']);
+        add_filter('woocommerce_checkout_process', [self::class, 'block_checkout_when_suspended']);
+    }
+
+    public static function register_routes(): void
+    {
+        register_rest_route('printonet/v1', '/tenant/config', [
+            'methods' => 'POST',
+            'callback' => [self::class, 'update_tenant_config'],
+            'permission_callback' => [Printonet_Provisioning_API::class, 'authenticate'],
+        ]);
+
+        register_rest_route('printonet/v1', '/tenant/config', [
+            'methods' => 'GET',
+            'callback' => [self::class, 'get_tenant_config'],
+            'permission_callback' => [Printonet_Provisioning_API::class, 'authenticate'],
+        ]);
+
+        register_rest_route('printonet/v1', '/tenant/pull-sync', [
+            'methods' => 'POST',
+            'callback' => [self::class, 'manual_pull_sync'],
+            'permission_callback' => [Printonet_Provisioning_API::class, 'authenticate'],
+        ]);
+
+        register_rest_route('printonet/v1', '/tenant/pull-sync-status', [
+            'methods' => 'GET',
+            'callback' => [self::class, 'pull_sync_status'],
+            'permission_callback' => [Printonet_Provisioning_API::class, 'authenticate'],
+        ]);
+    }
+
+    public static function update_tenant_config(WP_REST_Request $request): WP_REST_Response
+    {
+        $payload = $request->get_json_params();
+        if (!is_array($payload) || empty($payload)) {
+            $payload = $request->get_body_params();
+        }
+        return self::apply_config_payload($payload);
+    }
+
+    private static function apply_config_payload($payload): WP_REST_Response
+    {
+        if (!is_array($payload)) {
+            return new WP_REST_Response([
+                'success' => false,
+                'error' => 'Invalid config payload',
+            ], 422);
+        }
+        $incoming_version = isset($payload['config_version']) ? (int) $payload['config_version'] : 0;
+        $current_version = (int) get_option(self::CONFIG_VERSION_OPTION, 0);
+
+        if ($incoming_version > 0 && $incoming_version < $current_version) {
+            return new WP_REST_Response([
+                'success' => false,
+                'error' => 'Stale config version',
+                'current_version' => $current_version,
+            ], 409);
+        }
+
+        $status = sanitize_key((string) ($payload['status'] ?? 'active'));
+        if (!in_array($status, ['active', 'suspended'], true)) {
+            return new WP_REST_Response([
+                'success' => false,
+                'error' => 'Invalid status value',
+            ], 422);
+        }
+
+        $branding = [];
+        if (isset($payload['branding'])) {
+            if (!is_array($payload['branding'])) {
+                return new WP_REST_Response([
+                    'success' => false,
+                    'error' => 'Branding must be an object',
+                ], 422);
+            }
+            $branding = self::sanitize_branding($payload['branding']);
+        }
+
+        $layout = [];
+        if (isset($payload['layout'])) {
+            if (!is_array($payload['layout'])) {
+                return new WP_REST_Response([
+                    'success' => false,
+                    'error' => 'Layout must be an object',
+                ], 422);
+            }
+            $layout_json = wp_json_encode($payload['layout']);
+            if (strlen((string) $layout_json) > self::MAX_LAYOUT_BYTES) {
+                return new WP_REST_Response([
+                    'success' => false,
+                    'error' => 'Layout payload too large',
+                ], 422);
+            }
+            $layout = $payload['layout'];
+        }
+
+        $sections = [];
+        if (isset($payload['homepage_sections'])) {
+            if (!is_array($payload['homepage_sections'])) {
+                return new WP_REST_Response([
+                    'success' => false,
+                    'error' => 'Homepage sections must be an array',
+                ], 422);
+            }
+            $sections_json = wp_json_encode($payload['homepage_sections']);
+            if (strlen((string) $sections_json) > self::MAX_SECTIONS_BYTES) {
+                return new WP_REST_Response([
+                    'success' => false,
+                    'error' => 'Homepage sections payload too large',
+                ], 422);
+            }
+            $sections = $payload['homepage_sections'];
+        }
+
+        if (isset($payload['pull_sync_interval_minutes'])) {
+            $interval = (int) $payload['pull_sync_interval_minutes'];
+            if (!in_array($interval, [5, 15, 60], true)) {
+                return new WP_REST_Response([
+                    'success' => false,
+                    'error' => 'Invalid pull_sync_interval_minutes. Allowed: 5, 15, 60',
+                ], 422);
+            }
+            update_option(self::PULL_INTERVAL_OPTION, $interval);
+        }
+
+        update_option('printonet_tenant_status', $status);
+
+        if (!empty($branding)) {
+            self::apply_branding($branding);
+        }
+
+        if (!empty($layout)) {
+            update_option('printonet_layout_config', wp_json_encode($layout));
+        }
+
+        if (!empty($sections)) {
+            update_option('printonet_homepage_sections', wp_json_encode($sections));
+        }
+
+        self::sync_suspended_page_visibility();
+        $next_version = $incoming_version > 0 ? $incoming_version : $current_version + 1;
+        update_option(self::CONFIG_VERSION_OPTION, $next_version);
+        update_option('printonet_tenant_last_config_sync', current_time('mysql'));
+
+        return new WP_REST_Response([
+            'success' => true,
+            'status' => $status,
+            'config_version' => $next_version,
+            'config_hash' => self::config_hash(),
+            'pull_sync_interval_minutes' => (int) get_option(self::PULL_INTERVAL_OPTION, 60),
+            'synced_at' => get_option('printonet_tenant_last_config_sync'),
+        ], 200);
+    }
+
+    public static function get_tenant_config(WP_REST_Request $request): WP_REST_Response
+    {
+        unset($request);
+
+        return new WP_REST_Response([
+            'success' => true,
+            'status' => get_option('printonet_tenant_status', 'active'),
+            'branding' => [
+                'store_name' => get_option('blogname', ''),
+                'logo_url' => get_option('printonet_logo_url', ''),
+                'favicon_url' => get_option('printonet_favicon_url', ''),
+                'primary_color' => get_option('printonet_brand_primary_color', '#111111'),
+                'secondary_color' => get_option('printonet_brand_secondary_color', '#ffffff'),
+                'font_family' => get_option('printonet_brand_font_family', 'inherit'),
+            ],
+            'layout' => json_decode((string) get_option('printonet_layout_config', '{}'), true),
+            'homepage_sections' => json_decode((string) get_option('printonet_homepage_sections', '[]'), true),
+            'config_version' => (int) get_option(self::CONFIG_VERSION_OPTION, 0),
+            'config_hash' => self::config_hash(),
+            'pull_sync_interval_minutes' => (int) get_option(self::PULL_INTERVAL_OPTION, 60),
+            'synced_at' => get_option('printonet_tenant_last_config_sync', ''),
+        ], 200);
+    }
+
+    public static function manual_pull_sync(WP_REST_Request $request): WP_REST_Response
+    {
+        unset($request);
+        $result = self::pull_config_from_dashboard(true);
+
+        return new WP_REST_Response($result, ($result['success'] ?? false) ? 200 : 502);
+    }
+
+    public static function pull_sync_status(WP_REST_Request $request): WP_REST_Response
+    {
+        unset($request);
+
+        return new WP_REST_Response([
+            'success' => true,
+            'last_pull_status' => get_option('printonet_tenant_last_pull_status', 'never'),
+            'last_pull_at' => get_option('printonet_tenant_last_pull_at', ''),
+            'last_pull_error' => get_option('printonet_tenant_last_pull_error', ''),
+            'last_pull_source' => get_option('printonet_tenant_last_pull_source', ''),
+            'last_config_sync' => get_option('printonet_tenant_last_config_sync', ''),
+            'config_version' => (int) get_option(self::CONFIG_VERSION_OPTION, 0),
+            'config_hash' => self::config_hash(),
+            'pull_sync_interval_minutes' => (int) get_option(self::PULL_INTERVAL_OPTION, 60),
+            'pull_fail_count' => (int) get_option(self::CIRCUIT_FAIL_COUNT_OPTION, 0),
+            'circuit_open_until' => (int) get_option(self::CIRCUIT_OPEN_UNTIL_OPTION, 0),
+            'circuit_alert' => (bool) get_option(self::CIRCUIT_ALERT_OPTION, false),
+        ], 200);
+    }
+
+    public static function enforce_suspension_frontend(): void
+    {
+        if (!self::is_suspended()) {
+            return;
+        }
+
+        if (is_admin() || wp_doing_ajax()) {
+            return;
+        }
+
+        if (function_exists('is_cart') && is_cart()) {
+            wp_safe_redirect(home_url('/suspended/'));
+            exit;
+        }
+
+        if (function_exists('is_checkout') && is_checkout()) {
+            wp_safe_redirect(home_url('/suspended/'));
+            exit;
+        }
+
+        if (is_page('suspended')) {
+            return;
+        }
+
+        if (!is_user_logged_in()) {
+            wp_safe_redirect(home_url('/suspended/'));
+            exit;
+        }
+    }
+
+    public static function disable_purchase_when_suspended(bool $purchasable, $product): bool
+    {
+        unset($product);
+        if (self::is_suspended()) {
+            return false;
+        }
+
+        return $purchasable;
+    }
+
+    public static function disable_checkout_registration_when_suspended(bool $enabled): bool
+    {
+        if (self::is_suspended()) {
+            return false;
+        }
+
+        return $enabled;
+    }
+
+    public static function block_checkout_when_suspended(): void
+    {
+        if (self::is_suspended() && function_exists('wc_add_notice')) {
+            wc_add_notice(
+                __('Checkout is disabled while this store is suspended.', 'printonet-storefront'),
+                'error'
+            );
+        }
+    }
+
+    public static function is_suspended(): bool
+    {
+        return get_option('printonet_tenant_status', 'active') === 'suspended';
+    }
+
+    public static function schedule_pull_sync(): void
+    {
+        if (!defined('PRINTONET_DASHBOARD_CONFIG_FEED_URL') || PRINTONET_DASHBOARD_CONFIG_FEED_URL === '') {
+            return;
+        }
+
+        $minutes = (int) get_option(self::PULL_INTERVAL_OPTION, 60);
+        if (!in_array($minutes, [5, 15, 60], true)) {
+            $minutes = 60;
+        }
+
+        $schedule = self::schedule_name_for_minutes($minutes);
+        $next = wp_next_scheduled(self::CRON_HOOK);
+        if ($next) {
+            $event = wp_get_scheduled_event(self::CRON_HOOK);
+            $current_schedule = $event && isset($event->schedule) ? (string) $event->schedule : '';
+            if ($current_schedule !== $schedule) {
+                wp_clear_scheduled_hook(self::CRON_HOOK);
+                $next = false;
+            }
+        }
+
+        if (!$next) {
+            wp_schedule_event(time() + 60, $schedule, self::CRON_HOOK);
+        }
+    }
+
+    public static function pull_config_from_dashboard(bool $manual = false): array
+    {
+        $feed_url = defined('PRINTONET_DASHBOARD_CONFIG_FEED_URL')
+            ? (string) PRINTONET_DASHBOARD_CONFIG_FEED_URL
+            : '';
+        $secret = defined('PRINTONET_PLATFORM_HMAC_SECRET')
+            ? (string) PRINTONET_PLATFORM_HMAC_SECRET
+            : '';
+
+        if ($feed_url === '' || $secret === '') {
+            $result = ['success' => false, 'error' => 'Dashboard feed not configured'];
+            self::record_pull_result($result, $feed_url);
+            return $result;
+        }
+
+        $open_until = (int) get_option(self::CIRCUIT_OPEN_UNTIL_OPTION, 0);
+        if (!$manual && $open_until > time()) {
+            $result = [
+                'success' => false,
+                'error' => 'Circuit open due to repeated pull failures',
+                'circuit_open_until' => $open_until,
+            ];
+            self::record_pull_result($result, $feed_url);
+            return $result;
+        }
+
+        $tenant_slug = (string) wp_parse_url(home_url(), PHP_URL_HOST);
+        $timestamp = (string) time();
+        $signature = hash_hmac('sha256', $timestamp . '.', $secret);
+        $url = add_query_arg([
+            'tenant_slug' => $tenant_slug,
+        ], $feed_url);
+
+        $response = wp_remote_get($url, [
+            'timeout' => 20,
+            'headers' => [
+                'X-Printonet-Timestamp' => $timestamp,
+                'X-Printonet-Signature' => $signature,
+                'Content-Type' => 'application/json',
+            ],
+        ]);
+
+        if (is_wp_error($response)) {
+            $result = ['success' => false, 'error' => $response->get_error_message()];
+            self::record_pull_result($result, $feed_url);
+            return $result;
+        }
+
+        $decoded = json_decode(wp_remote_retrieve_body($response), true);
+        if (!is_array($decoded)) {
+            $result = ['success' => false, 'error' => 'Invalid dashboard feed response'];
+            self::record_pull_result($result, $feed_url);
+            return $result;
+        }
+
+        if (!empty($decoded['error'])) {
+            $result = ['success' => false, 'error' => (string) $decoded['error']];
+            self::record_pull_result($result, $feed_url);
+            return $result;
+        }
+
+        $apply_payload = [
+            'status' => $decoded['status'] ?? 'active',
+            'branding' => is_array($decoded['branding'] ?? null) ? $decoded['branding'] : [],
+            'layout' => is_array($decoded['layout'] ?? null) ? $decoded['layout'] : [],
+            'homepage_sections' => is_array($decoded['homepage_sections'] ?? null) ? $decoded['homepage_sections'] : [],
+            'config_version' => isset($decoded['config_version']) ? (int) $decoded['config_version'] : 0,
+        ];
+
+        $result = self::apply_config_payload($apply_payload)->get_data();
+        self::record_pull_result($result, $feed_url);
+        return $result;
+    }
+
+    private static function apply_branding(array $branding): void
+    {
+        if (!empty($branding['store_name'])) {
+            update_option('blogname', sanitize_text_field((string) $branding['store_name']));
+        }
+        if (!empty($branding['font_family'])) {
+            update_option('printonet_brand_font_family', sanitize_text_field((string) $branding['font_family']));
+        }
+
+        $brand_subset = [];
+        if (!empty($branding['logo_url'])) {
+            $brand_subset['logo_url'] = $branding['logo_url'];
+        }
+        if (!empty($branding['favicon_url'])) {
+            $brand_subset['favicon_url'] = $branding['favicon_url'];
+        }
+        if (!empty($branding['primary_color'])) {
+            $brand_subset['primary_color'] = $branding['primary_color'];
+        }
+        if (!empty($branding['secondary_color'])) {
+            $brand_subset['secondary_color'] = $branding['secondary_color'];
+        }
+        if (!empty($brand_subset)) {
+            Printonet_Branding::apply($brand_subset);
+        }
+    }
+
+    private static function sanitize_branding(array $branding): array
+    {
+        $result = [];
+
+        if (isset($branding['store_name'])) {
+            $result['store_name'] = sanitize_text_field((string) $branding['store_name']);
+        }
+        if (isset($branding['logo_url'])) {
+            $result['logo_url'] = esc_url_raw((string) $branding['logo_url']);
+        }
+        if (isset($branding['favicon_url'])) {
+            $result['favicon_url'] = esc_url_raw((string) $branding['favicon_url']);
+        }
+        if (isset($branding['primary_color'])) {
+            $result['primary_color'] = sanitize_hex_color((string) $branding['primary_color']) ?: '#111111';
+        }
+        if (isset($branding['secondary_color'])) {
+            $result['secondary_color'] = sanitize_hex_color((string) $branding['secondary_color']) ?: '#ffffff';
+        }
+        if (isset($branding['font_family'])) {
+            $result['font_family'] = sanitize_text_field((string) $branding['font_family']);
+        }
+
+        return $result;
+    }
+
+    private static function record_pull_result(array $result, string $source): void
+    {
+        update_option('printonet_tenant_last_pull_status', !empty($result['success']) ? 'success' : 'failed');
+        update_option('printonet_tenant_last_pull_at', current_time('mysql'));
+        update_option('printonet_tenant_last_pull_error', !empty($result['error']) ? sanitize_text_field((string) $result['error']) : '');
+        update_option('printonet_tenant_last_pull_source', esc_url_raw($source));
+
+        if (!empty($result['success'])) {
+            update_option(self::CIRCUIT_FAIL_COUNT_OPTION, 0);
+            update_option(self::CIRCUIT_OPEN_UNTIL_OPTION, 0);
+            update_option(self::CIRCUIT_ALERT_OPTION, false);
+            return;
+        }
+
+        $fails = (int) get_option(self::CIRCUIT_FAIL_COUNT_OPTION, 0) + 1;
+        update_option(self::CIRCUIT_FAIL_COUNT_OPTION, $fails);
+        if ($fails >= self::CIRCUIT_FAIL_THRESHOLD) {
+            update_option(self::CIRCUIT_OPEN_UNTIL_OPTION, time() + self::CIRCUIT_COOLDOWN_SECONDS);
+            update_option(self::CIRCUIT_ALERT_OPTION, true);
+        }
+    }
+
+    public static function register_cron_schedules(array $schedules): array
+    {
+        $schedules['printonet_every_5_minutes'] = [
+            'interval' => 5 * 60,
+            'display' => 'Every 5 Minutes (Printonet)',
+        ];
+        $schedules['printonet_every_15_minutes'] = [
+            'interval' => 15 * 60,
+            'display' => 'Every 15 Minutes (Printonet)',
+        ];
+
+        return $schedules;
+    }
+
+    private static function schedule_name_for_minutes(int $minutes): string
+    {
+        if ($minutes === 5) {
+            return 'printonet_every_5_minutes';
+        }
+        if ($minutes === 15) {
+            return 'printonet_every_15_minutes';
+        }
+        return 'hourly';
+    }
+
+    private static function config_hash(): string
+    {
+        $snapshot = [
+            'status' => get_option('printonet_tenant_status', 'active'),
+            'name' => get_option('blogname', ''),
+            'logo' => get_option('printonet_logo_url', ''),
+            'primary' => get_option('printonet_brand_primary_color', '#111111'),
+            'secondary' => get_option('printonet_brand_secondary_color', '#ffffff'),
+            'font' => get_option('printonet_brand_font_family', 'inherit'),
+            'layout' => (string) get_option('printonet_layout_config', '{}'),
+            'sections' => (string) get_option('printonet_homepage_sections', '[]'),
+            'version' => (int) get_option(self::CONFIG_VERSION_OPTION, 0),
+        ];
+
+        return hash('sha256', wp_json_encode($snapshot));
+    }
+
+    /**
+     * Older installs created the suspended landing page as published even when the store was active,
+     * which surfaced it in Storefront menus. Demote to draft when active.
+     */
+    public static function migrate_legacy_suspended_page(): void
+    {
+        if (self::is_suspended()) {
+            return;
+        }
+
+        $page = get_page_by_path('suspended');
+        if (!$page instanceof WP_Post || $page->post_status !== 'publish') {
+            return;
+        }
+
+        wp_update_post([
+            'ID' => $page->ID,
+            'post_status' => 'draft',
+        ]);
+    }
+
+    /**
+     * Keep the /suspended/ landing page draft while the store is active so it does not appear in menus.
+     * Publish only when suspended so guest redirects still resolve.
+     */
+    private static function sync_suspended_page_visibility(): void
+    {
+        $page = get_page_by_path('suspended');
+        $desired_status = self::is_suspended() ? 'publish' : 'draft';
+
+        if (!$page instanceof WP_Post) {
+            wp_insert_post([
+                'post_title' => 'Store Temporarily Unavailable',
+                'post_name' => 'suspended',
+                'post_content' => 'This store is temporarily unavailable. Please contact support.',
+                'post_status' => $desired_status,
+                'post_type' => 'page',
+            ]);
+
+            return;
+        }
+
+        if ($page->post_status !== $desired_status) {
+            wp_update_post([
+                'ID' => $page->ID,
+                'post_status' => $desired_status,
+            ]);
+        }
+    }
+}

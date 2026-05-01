@@ -1,0 +1,12 @@
+2026-05-01 00:29:12.925 [info] 
+
+
+
+
+2026-05-01 00:29:12.933 [info] Extension host agent started.
+2026-05-01 00:29:13.532 [info] [127.0.0.1][bcca98b0][ManagementConnection] New connection established.
+2026-05-01 00:29:13.639 [info] [127.0.0.1][35b85820][ExtensionHostConnection] New connection established.
+2026-05-01 00:29:13.650 [info] Getting extensions control
+2026-05-01 00:29:13.716 [info] [127.0.0.1][35b85820][ExtensionHostConnection] <155549> Launched Extension Host Process.
+2026-05-01 00:29:27.510 [info] [CursorProclistService] Config enabled feature (subsample every 10s)
+2026-05-01 00:34:12.934 [info] New EH opened, aborting shutdown

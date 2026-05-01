@@ -1,0 +1,42 @@
+2026-05-01 00:29:17.349 [info] [main] Log level: Info
+2026-05-01 00:29:17.349 [info] [main] Validating found git in: "/usr/bin/git"
+2026-05-01 00:29:17.349 [info] [main] Using git "2.43.0" from "/usr/bin/git"
+2026-05-01 00:29:17.349 [info] [Model][doInitialScan] Initial repository scan started
+2026-05-01 00:29:17.349 [info] > git rev-parse --show-toplevel [2ms] (getRepositoryRoot)
+2026-05-01 00:29:17.349 [info] fatal: not a git repository (or any of the parent directories): .git
+2026-05-01 00:29:17.349 [info] > git rev-parse --show-toplevel [1ms] (getRepositoryRoot)
+2026-05-01 00:29:17.349 [info] fatal: not a git repository (or any of the parent directories): .git
+2026-05-01 00:29:17.349 [info] [Model][doInitialScan] Initial repository scan completed - repositories (0), closed repositories (0), parent repositories (0), unsafe repositories (0)
+2026-05-01 00:29:27.290 [info] > git config --global user.name [6ms] 
+2026-05-01 00:29:27.296 [info] > git config --global user.email [1ms] 
+2026-05-01 00:29:27.297 [info] [main] Stored git author name in global state:  <>
+2026-05-01 00:44:36.199 [info] > git init -b main [7ms] 
+2026-05-01 00:44:36.208 [info] > git rev-parse --show-toplevel [1ms] (getRepositoryRoot)
+2026-05-01 00:44:36.221 [info] > git rev-parse --git-dir --git-common-dir --show-superproject-working-tree [8ms] 
+2026-05-01 00:44:36.230 [info] [Model][openRepository] Opened repository: /root
+2026-05-01 00:44:36.230 [info] [Model][openRepository] Opened repository (kind): repository
+2026-05-01 00:44:36.238 [info] [Git][getRemotes] No remotes found in the git config file
+2026-05-01 00:44:36.244 [info] > git config --get commit.template [6ms] 
+2026-05-01 00:44:36.244 [info] [Git][getRemotes] No remotes found in the git config file
+2026-05-01 00:44:36.244 [info] > git for-each-ref --format=%(refname)%00%(upstream:short)%00%(objectname)%00%(upstream:track)%00%(upstream:remotename)%00%(upstream:remoteref) refs/heads/main refs/remotes/main [1ms] 
+2026-05-01 00:44:36.244 [warning] [Git][getBranch] No such branch: main
+2026-05-01 00:44:36.256 [info] > git for-each-ref --sort -committerdate --format %(refname)%00%(objectname)%00%(*objectname) [1ms] 
+2026-05-01 00:44:36.497 [info] > git status -z -uall [248ms] (cancelled)
+2026-05-01 00:44:37.997 [info] > git for-each-ref --format=%(refname)%00%(upstream:short)%00%(objectname)%00%(upstream:track)%00%(upstream:remotename)%00%(upstream:remoteref) refs/heads/main refs/remotes/main [1503ms] 
+2026-05-01 00:44:37.997 [warning] [Git][getBranch] No such branch: main
+2026-05-01 00:44:37.997 [error] [GitHistoryProvider][resolveHEADMergeBase] Failed to resolve merge base for main: Error: No such branch: main.
+2026-05-01 00:44:38.006 [info] > git config --get commit.template [11ms] 
+2026-05-01 00:44:38.015 [info] [Git][getRemotes] No remotes found in the git config file
+2026-05-01 00:44:38.025 [info] > git for-each-ref --format=%(refname)%00%(upstream:short)%00%(objectname)%00%(upstream:track)%00%(upstream:remotename)%00%(upstream:remoteref) refs/heads/main refs/remotes/main [10ms] 
+2026-05-01 00:44:38.025 [warning] [Git][getBranch] No such branch: main
+2026-05-01 00:44:38.041 [info] > git for-each-ref --sort -committerdate --format %(refname)%00%(objectname)%00%(*objectname) [3ms] 
+2026-05-01 00:44:38.321 [info] > git status -z -uall [289ms] (cancelled)
+2026-05-01 00:44:40.575 [info] > git log --format=%H%n%aN%n%aE%n%at%n%ct%n%P%n%D%n%B -z --shortstat --diff-merges=first-parent -n50 --skip=0 --topo-order --decorate=full --stdin [2ms] 
+2026-05-01 00:44:40.575 [info] fatal: bad revision 'refs/heads/main'
+2026-05-01 00:44:40.575 [error] [GitHistoryProvider][provideHistoryItems] Failed to get history items with options '{"historyItemRefs":["refs/heads/main"],"limit":50,"skip":0}': Failed to execute git {
+  "exitCode": 128,
+  "gitCommand": "log",
+  "stdout": "",
+  "stderr": "fatal: bad revision 'refs/heads/main'\n"
+}
+2026-05-01 00:44:41.086 [info] > git check-ignore -v -z --stdin [1ms]

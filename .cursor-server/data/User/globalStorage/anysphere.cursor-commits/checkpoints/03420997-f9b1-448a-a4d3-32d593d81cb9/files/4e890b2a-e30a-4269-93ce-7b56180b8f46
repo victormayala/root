@@ -1,0 +1,291 @@
+<?php
+
+if (!defined('ABSPATH')) {
+    exit;
+}
+
+interface Printonet_Supplier_Adapter_Interface
+{
+    public function key(): string;
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    public function fetch_catalog(array $credentials): array;
+
+    public function validate_credentials(array $credentials): bool;
+}
+
+class Printonet_Dummy_Supplier_Adapter implements Printonet_Supplier_Adapter_Interface
+{
+    public function key(): string
+    {
+        return 'dummy';
+    }
+
+    public function fetch_catalog(array $credentials): array
+    {
+        unset($credentials);
+
+        return [
+            [
+                'sku' => 'TSHIRT-001',
+                'name' => 'Soft Cotton T-Shirt',
+                'price' => 19.99,
+                'stock' => 999,
+            ],
+        ];
+    }
+
+    public function validate_credentials(array $credentials): bool
+    {
+        return !empty($credentials['api_key']);
+    }
+}
+
+class Printonet_Printful_Adapter implements Printonet_Supplier_Adapter_Interface
+{
+    public function key(): string
+    {
+        return 'printful';
+    }
+
+    public function fetch_catalog(array $credentials): array
+    {
+        if (!$this->validate_credentials($credentials)) {
+            return [];
+        }
+
+        return [];
+    }
+
+    public function validate_credentials(array $credentials): bool
+    {
+        return !empty($credentials['api_key']);
+    }
+}
+
+class Printonet_Printify_Adapter implements Printonet_Supplier_Adapter_Interface
+{
+    public function key(): string
+    {
+        return 'printify';
+    }
+
+    public function fetch_catalog(array $credentials): array
+    {
+        if (!$this->validate_credentials($credentials)) {
+            return [];
+        }
+
+        return [];
+    }
+
+    public function validate_credentials(array $credentials): bool
+    {
+        return !empty($credentials['api_key']);
+    }
+}
+
+class Printonet_Supplier_Sync
+{
+    private const ACTION_SYNC = 'printonet_supplier_sync_action';
+    private const MAX_ATTEMPTS = 3;
+
+    /** @var array<string, Printonet_Supplier_Adapter_Interface> */
+    private static array $adapters = [];
+
+    public static function init(): void
+    {
+        self::register_adapter(new Printonet_Dummy_Supplier_Adapter());
+        self::register_adapter(new Printonet_Printful_Adapter());
+        self::register_adapter(new Printonet_Printify_Adapter());
+
+        add_action('rest_api_init', [self::class, 'register_routes']);
+        add_action(self::ACTION_SYNC, [self::class, 'run_sync'], 10, 1);
+    }
+
+    public static function register_routes(): void
+    {
+        register_rest_route('printonet/v1', '/suppliers/sync', [
+            'methods' => 'POST',
+            'callback' => [self::class, 'queue_sync'],
+            'permission_callback' => [Printonet_Provisioning_API::class, 'authenticate'],
+        ]);
+
+        register_rest_route('printonet/v1', '/suppliers/validate', [
+            'methods' => 'POST',
+            'callback' => [self::class, 'validate_supplier'],
+            'permission_callback' => [Printonet_Provisioning_API::class, 'authenticate'],
+        ]);
+
+        register_rest_route('printonet/v1', '/suppliers/sync-status/(?P<job_id>\d+)', [
+            'methods' => 'GET',
+            'callback' => [self::class, 'sync_status'],
+            'permission_callback' => [Printonet_Provisioning_API::class, 'authenticate'],
+        ]);
+    }
+
+    public static function register_adapter(Printonet_Supplier_Adapter_Interface $adapter): void
+    {
+        self::$adapters[$adapter->key()] = $adapter;
+    }
+
+    public static function queue_sync(WP_REST_Request $request): WP_REST_Response
+    {
+        $payload = $request->get_json_params();
+        $supplier = sanitize_key((string) ($payload['supplier'] ?? ''));
+
+        if ($supplier === '' || !isset(self::$adapters[$supplier])) {
+            return new WP_REST_Response([
+                'success' => false,
+                'error' => 'Unknown supplier adapter',
+            ], 422);
+        }
+
+        $credentials = is_array($payload['credentials'] ?? null) ? $payload['credentials'] : [];
+        $blog_id = get_current_blog_id();
+        $job_id = Printonet_Sync_Store::create_job($blog_id, $supplier, [
+            'supplier' => $supplier,
+            'credentials' => $credentials,
+        ]);
+        wp_schedule_single_event(time() + 2, self::ACTION_SYNC, [$job_id]);
+
+        return new WP_REST_Response([
+            'success' => true,
+            'queued' => true,
+            'job_id' => $job_id,
+            'supplier' => $supplier,
+        ], 202);
+    }
+
+    public static function run_sync(int $job_id): void
+    {
+        $job = Printonet_Sync_Store::get_job($job_id);
+        if (!$job) {
+            return;
+        }
+
+        $blog_id = (int) $job['blog_id'];
+        $payload = json_decode((string) $job['payload'], true);
+        $payload = is_array($payload) ? $payload : [];
+        $supplier = sanitize_key((string) ($payload['supplier'] ?? ''));
+        $credentials = is_array($payload['credentials'] ?? null) ? $payload['credentials'] : [];
+
+        if (!isset(self::$adapters[$supplier])) {
+            Printonet_Sync_Store::mark_failed($job_id, 'Supplier adapter not found');
+            return;
+        }
+
+        Printonet_Sync_Store::mark_processing($job_id);
+        $attempts = Printonet_Sync_Store::get_attempts($job_id);
+        $adapter = self::$adapters[$supplier];
+
+        if (!$adapter->validate_credentials($credentials)) {
+            Printonet_Sync_Store::mark_failed($job_id, 'Invalid supplier credentials');
+            return;
+        }
+
+        try {
+            switch_to_blog($blog_id);
+            $products = $adapter->fetch_catalog($credentials);
+            foreach ($products as $product_data) {
+                self::upsert_simple_product($product_data);
+            }
+            update_option('printonet_supplier_last_sync_' . $supplier, current_time('mysql'));
+            restore_current_blog();
+            Printonet_Sync_Store::mark_success($job_id);
+        } catch (Throwable $exception) {
+            if (is_blog_switched()) {
+                restore_current_blog();
+            }
+
+            if ($attempts < self::MAX_ATTEMPTS) {
+                Printonet_Sync_Store::mark_queued($job_id, $exception->getMessage());
+                wp_schedule_single_event(time() + 30, self::ACTION_SYNC, [$job_id]);
+                return;
+            }
+
+            Printonet_Sync_Store::mark_failed($job_id, $exception->getMessage());
+        }
+    }
+
+    public static function validate_supplier(WP_REST_Request $request): WP_REST_Response
+    {
+        $payload = $request->get_json_params();
+        $supplier = sanitize_key((string) ($payload['supplier'] ?? ''));
+        $credentials = is_array($payload['credentials'] ?? null) ? $payload['credentials'] : [];
+
+        if ($supplier === '' || !isset(self::$adapters[$supplier])) {
+            return new WP_REST_Response([
+                'success' => false,
+                'error' => 'Unknown supplier adapter',
+            ], 422);
+        }
+
+        $valid = self::$adapters[$supplier]->validate_credentials($credentials);
+
+        return new WP_REST_Response([
+            'success' => $valid,
+            'supplier' => $supplier,
+        ], $valid ? 200 : 422);
+    }
+
+    public static function sync_status(WP_REST_Request $request): WP_REST_Response
+    {
+        $job_id = (int) $request->get_param('job_id');
+        $job = Printonet_Sync_Store::get_job($job_id);
+
+        if (!$job) {
+            return new WP_REST_Response([
+                'success' => false,
+                'error' => 'Job not found',
+            ], 404);
+        }
+
+        return new WP_REST_Response([
+            'success' => true,
+            'job' => [
+                'id' => (int) $job['id'],
+                'blog_id' => (int) $job['blog_id'],
+                'supplier' => (string) $job['supplier'],
+                'status' => (string) $job['status'],
+                'attempts' => (int) $job['attempts'],
+                'last_error' => (string) ($job['last_error'] ?? ''),
+                'created_at' => (string) $job['created_at'],
+                'updated_at' => (string) $job['updated_at'],
+            ],
+        ], 200);
+    }
+
+    private static function upsert_simple_product(array $data): void
+    {
+        if (!function_exists('wc_get_product_id_by_sku')) {
+            return;
+        }
+
+        if (empty($data['sku']) || empty($data['name'])) {
+            return;
+        }
+
+        $sku = wc_clean((string) $data['sku']);
+        $existing_id = wc_get_product_id_by_sku($sku);
+        $product_id = $existing_id ?: wp_insert_post([
+            'post_title' => sanitize_text_field((string) $data['name']),
+            'post_status' => 'publish',
+            'post_type' => 'product',
+        ]);
+
+        if (!$product_id || is_wp_error($product_id)) {
+            return;
+        }
+
+        wp_set_object_terms((int) $product_id, 'simple', 'product_type');
+        update_post_meta((int) $product_id, '_sku', $sku);
+        update_post_meta((int) $product_id, '_regular_price', wc_format_decimal((string) ($data['price'] ?? '0')));
+        update_post_meta((int) $product_id, '_price', wc_format_decimal((string) ($data['price'] ?? '0')));
+        update_post_meta((int) $product_id, '_manage_stock', 'yes');
+        update_post_meta((int) $product_id, '_stock', wc_stock_amount((int) ($data['stock'] ?? 0)));
+        update_post_meta((int) $product_id, '_stock_status', ((int) ($data['stock'] ?? 0)) > 0 ? 'instock' : 'outofstock');
+    }
+}

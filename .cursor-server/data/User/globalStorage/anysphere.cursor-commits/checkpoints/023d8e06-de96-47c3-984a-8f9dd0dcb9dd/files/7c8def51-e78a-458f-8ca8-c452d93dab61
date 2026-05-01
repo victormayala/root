@@ -1,0 +1,185 @@
+# Printonet Provisioning API Contract
+
+## Endpoint
+
+- `POST /wp-json/printonet/v1/provision-store`
+- `POST /wp-json/printonet/v1/suppliers/sync`
+- `POST /wp-json/printonet/v1/suppliers/validate`
+- `GET /wp-json/printonet/v1/suppliers/sync-status/{job_id}`
+- `POST /wp-json/printonet/v1/suppliers/webhook`
+
+## Authentication
+
+- Preferred signed request headers:
+  - `X-Printonet-Timestamp: <unix_epoch_seconds>`
+  - `X-Printonet-Signature: <hex_hmac_sha256(timestamp + "." + raw_body, PLATFORM_HMAC_SECRET)>`
+- Fallback header (legacy rollout):
+  - `X-Printonet-Api-Key: <PROVISIONING_API_KEY>`
+
+## Request body
+
+```json
+{
+  "tenant_slug": "acme-print",
+  "request_id": "optional-idempotency-key-123",
+  "store_name": "Acme Print",
+  "admin_email": "owner@acmeprint.com",
+  "admin_username": "acme_owner",
+  "admin_password": "optional-strong-password",
+  "primary_color": "#0f172a",
+  "secondary_color": "#f8fafc",
+  "logo_url": "https://cdn.printonet.com/logos/acme.png",
+  "currency": "USD",
+  "default_country": "US:CA",
+  "weight_unit": "lbs",
+  "dimension_unit": "in"
+}
+```
+
+## Success response
+
+```json
+{
+  "success": true,
+  "site_id": 12,
+  "admin_user_id": 56,
+  "store_url": "https://acme-print.stores.printonet.local"
+}
+```
+
+If `request_id` is reused, endpoint returns existing tenant info with:
+
+```json
+{
+  "success": true,
+  "idempotent": true,
+  "site_id": 12,
+  "admin_user_id": 56,
+  "store_url": "https://acme-print.stores.printonet.local"
+}
+```
+
+## Error responses
+
+- `401/403`: invalid API key
+- `409`: tenant already exists
+- `422`: missing required fields
+- `500`: site creation failure
+
+## Supplier sync request
+
+```json
+{
+  "supplier": "printonet_internal",
+  "credentials": {
+    "base_url": "https://api.printonet.com/internal-supplier",
+    "api_key": "supplier-token"
+  }
+}
+```
+
+If `supplier` is omitted, default is `printonet_internal`.
+
+## Supplier sync response
+
+```json
+{
+  "success": true,
+  "queued": true,
+  "job_id": 101,
+  "supplier": "printonet_internal"
+}
+```
+
+## Supplier validation request
+
+```json
+{
+  "supplier": "printful",
+  "credentials": {
+    "api_key": "supplier-token"
+  }
+}
+```
+
+For Printify, include `shop_id`:
+
+```json
+{
+  "supplier": "printify",
+  "credentials": {
+    "api_key": "supplier-token",
+    "shop_id": "123456"
+  }
+}
+```
+
+For internal supplier validation:
+
+```json
+{
+  "supplier": "printonet_internal",
+  "credentials": {
+    "base_url": "https://api.printonet.com/internal-supplier",
+    "api_key": "supplier-token"
+  }
+}
+```
+
+Internal supplier catalog schema (`GET {base_url}/catalog`) must return:
+
+```json
+{
+  "items": [
+    {
+      "sku": "TSHIRT-001",
+      "name": "Soft Cotton Tee",
+      "price": 24.99,
+      "stock": 120
+    }
+  ]
+}
+```
+
+Validation rules:
+
+- `items` must be an array
+- every item must include non-empty string `sku` and `name`
+- every item must include numeric `price` and `stock`
+
+## Supplier status response
+
+```json
+{
+  "success": true,
+  "job": {
+    "id": 101,
+    "blog_id": 12,
+    "supplier": "printful",
+    "status": "processing",
+    "attempts": 1,
+    "last_error": "",
+    "created_at": "2026-04-29 14:00:00",
+    "updated_at": "2026-04-29 14:00:10"
+  }
+}
+```
+
+## Supplier webhook request
+
+Authentication header:
+
+- `X-Printonet-Webhook-Secret: <SUPPLIER_WEBHOOK_SECRET>`
+
+Body:
+
+```json
+{
+  "event": "stock_price_update",
+  "blog_id": 12,
+  "items": [
+    { "sku": "TSHIRT-001", "price": "24.99", "stock": 120 },
+    { "sku": "TSHIRT-002", "stock": 0 }
+  ]
+}
+```

@@ -1,0 +1,82 @@
+<?php
+/**
+ * Custom header for Printonet Theme.
+ *
+ * @package printonet-theme
+ */
+
+?><!doctype html>
+<html <?php language_attributes(); ?>>
+<head>
+<meta charset="<?php bloginfo('charset'); ?>">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="profile" href="http://gmpg.org/xfn/11">
+<link rel="pingback" href="<?php bloginfo('pingback_url'); ?>">
+<?php wp_head(); ?>
+</head>
+
+<body <?php body_class(); ?>>
+<?php wp_body_open(); ?>
+<?php do_action('storefront_before_site'); ?>
+
+<div id="page" class="hfeed site">
+  <?php do_action('storefront_before_header'); ?>
+
+  <header id="masthead" class="site-header printonet-header" role="banner" style="<?php storefront_header_styles(); ?>">
+    <div class="col-full printonet-header__top">
+      <?php storefront_skip_links(); ?>
+      <div class="printonet-header__brand">
+        <?php storefront_site_branding(); ?>
+      </div>
+      <div class="printonet-header__search">
+        <?php storefront_product_search(); ?>
+      </div>
+      <?php
+      $account_url = function_exists('wc_get_page_permalink')
+          ? wc_get_page_permalink('myaccount')
+          : home_url('/my-account/');
+      $cart_url = function_exists('wc_get_cart_url')
+          ? wc_get_cart_url()
+          : home_url('/cart/');
+      $wishlist_url = function_exists('yith_wcwl_get_wishlist_url')
+          ? yith_wcwl_get_wishlist_url()
+          : home_url('/wishlist/');
+      ?>
+      <div class="printonet-header__meta">
+        <nav class="printonet-header__quicklinks" aria-label="<?php echo esc_attr__('Shopping shortcuts', 'printonet-theme'); ?>">
+          <a class="printonet-header__icon-link" href="<?php echo esc_url($cart_url); ?>" aria-label="<?php echo esc_attr__('Cart', 'printonet-theme'); ?>">
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M7 18c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2Zm10 0c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2ZM7.2 14h9.7c.8 0 1.5-.5 1.8-1.2l2.9-6.3a1 1 0 0 0-.9-1.5H6.2l-.5-2.2A1 1 0 0 0 4.7 2H2a1 1 0 1 0 0 2h1.9l2.5 10.8A2 2 0 0 0 8.3 16H19a1 1 0 1 0 0-2H8.3l-.2-1Z"/></svg>
+          </a>
+          <a class="printonet-header__icon-link" href="<?php echo esc_url($wishlist_url); ?>" aria-label="<?php echo esc_attr__('Wishlist', 'printonet-theme'); ?>">
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 21.4 10.6 20C5.4 15.3 2 12.2 2 8.5 2 5.4 4.4 3 7.5 3c1.7 0 3.4.8 4.5 2.1C13.1 3.8 14.8 3 16.5 3 19.6 3 22 5.4 22 8.5c0 3.7-3.4 6.8-8.6 11.5L12 21.4Z"/></svg>
+          </a>
+          <a class="printonet-header__icon-link" href="<?php echo esc_url($account_url); ?>" aria-label="<?php echo esc_attr__('Account', 'printonet-theme'); ?>">
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 12a5 5 0 1 0 0-10 5 5 0 0 0 0 10Zm0 2c-4.4 0-8 2.2-8 5v2a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-2c0-2.8-3.6-5-8-5Z"/></svg>
+          </a>
+        </nav>
+        <nav class="printonet-header__auth" aria-label="<?php echo esc_attr__('Account', 'printonet-theme'); ?>">
+          <?php if (is_user_logged_in()) : ?>
+            <a href="<?php echo esc_url($account_url); ?>"><?php echo esc_html__('My account', 'printonet-theme'); ?></a>
+          <?php else : ?>
+            <a href="<?php echo esc_url($account_url); ?>"><?php echo esc_html__('Login', 'printonet-theme'); ?></a>
+            <span>/</span>
+            <a href="<?php echo esc_url($account_url); ?>"><?php echo esc_html__('Register', 'printonet-theme'); ?></a>
+          <?php endif; ?>
+        </nav>
+      </div>
+    </div>
+
+    <div class="storefront-primary-navigation printonet-header__nav">
+      <div class="col-full">
+        <?php storefront_primary_navigation(); ?>
+        <?php storefront_header_cart(); ?>
+      </div>
+    </div>
+  </header>
+
+  <?php
+  do_action('storefront_before_content');
+  ?>
+  <div id="content" class="site-content" tabindex="-1">
+    <div class="col-full">
+      <?php do_action('storefront_content_top'); ?>

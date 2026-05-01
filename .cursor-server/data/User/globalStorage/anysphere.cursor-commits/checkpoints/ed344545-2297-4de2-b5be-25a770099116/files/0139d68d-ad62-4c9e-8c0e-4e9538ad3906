@@ -1,0 +1,527 @@
+<?php
+
+if (!defined('ABSPATH')) {
+    exit;
+}
+
+class Printonet_Provisioning_API
+{
+    private const IDEMPOTENCY_OPTION_PREFIX = 'printonet_provision_request_';
+    private const DELETE_IDEMPOTENCY_OPTION_PREFIX = 'printonet_delete_request_';
+    private const SLUG_MAX_LENGTH = 40;
+    private const RESERVED_SLUGS = [
+        'www',
+        'admin',
+        'api',
+        'support',
+        'stores',
+        'mail',
+        'ftp',
+        'app',
+        'blog',
+        'help',
+    ];
+
+    public static function init(): void
+    {
+        add_action('rest_api_init', [self::class, 'register_routes']);
+    }
+
+    public static function register_routes(): void
+    {
+        register_rest_route('printonet/v1', '/health', [
+            'methods' => 'GET',
+            'callback' => [self::class, 'health'],
+            'permission_callback' => '__return_true',
+        ]);
+
+        register_rest_route('printonet/v1', '/provision-store', [
+            'methods' => 'POST',
+            'callback' => [self::class, 'provision_store'],
+            'permission_callback' => [self::class, 'authenticate'],
+        ]);
+
+        register_rest_route('printonet/v1', '/slug-availability', [
+            'methods' => 'POST',
+            'callback' => [self::class, 'slug_availability'],
+            'permission_callback' => [self::class, 'authenticate'],
+        ]);
+
+        register_rest_route('printonet/v1', '/delete-store', [
+            'methods' => 'POST',
+            'callback' => [self::class, 'delete_store'],
+            'permission_callback' => [self::class, 'authenticate'],
+        ]);
+    }
+
+    public static function health(WP_REST_Request $request): WP_REST_Response
+    {
+        unset($request);
+
+        return new WP_REST_Response([
+            'ok' => true,
+            'service' => 'printonet-tenant-engine',
+            'timestamp' => gmdate('c'),
+        ], 200);
+    }
+
+    public static function authenticate(WP_REST_Request $request): bool
+    {
+        // Prefer signed requests from the main Printonet platform.
+        if (Printonet_Request_Auth::verify_platform_signature($request)) {
+            return true;
+        }
+
+        // Hardened default: API key fallback is disabled unless explicitly enabled.
+        if (!defined('PRINTONET_ALLOW_LEGACY_API_KEY') || PRINTONET_ALLOW_LEGACY_API_KEY !== true) {
+            return false;
+        }
+
+        $incoming = (string) $request->get_header('x-printonet-api-key');
+        $expected = defined('PRINTONET_PROVISIONING_API_KEY')
+            ? (string) PRINTONET_PROVISIONING_API_KEY
+            : (string) getenv('PROVISIONING_API_KEY');
+
+        if ($incoming === '' || $expected === '') {
+            return false;
+        }
+
+        return hash_equals($expected, $incoming);
+    }
+
+    public static function provision_store(WP_REST_Request $request): WP_REST_Response
+    {
+        $payload = $request->get_json_params();
+        $required = ['tenant_slug', 'store_name', 'admin_email'];
+        $request_id = isset($payload['request_id']) ? sanitize_key((string) $payload['request_id']) : '';
+
+        foreach ($required as $field) {
+            if (empty($payload[$field])) {
+                return new WP_REST_Response([
+                    'success' => false,
+                    'error' => "Missing required field: {$field}",
+                ], 422);
+            }
+        }
+
+        if ($request_id !== '') {
+            $existing = self::find_existing_by_request_id($request_id);
+            if (!empty($existing)) {
+                $store_url = (string) ($existing['store_url'] ?? '');
+                $access_urls = self::build_store_access_urls($store_url);
+                return new WP_REST_Response([
+                    'success' => true,
+                    'idempotent' => true,
+                    'site_id' => (int) $existing['site_id'],
+                    'admin_user_id' => (int) $existing['admin_user_id'],
+                    'admin_username' => (string) ($existing['admin_username'] ?? ''),
+                    'admin_password' => (string) ($existing['admin_password'] ?? ''),
+                    'store_url' => $store_url,
+                    'store_admin_url' => $access_urls['store_admin_url'],
+                    'store_login_url' => $access_urls['store_login_url'],
+                ], 200);
+            }
+        }
+
+        $tenant_slug = sanitize_title((string) $payload['tenant_slug']);
+        $slug_validation = self::validate_tenant_slug($tenant_slug);
+        if (!$slug_validation['valid']) {
+            return new WP_REST_Response([
+                'success' => false,
+                'error' => (string) $slug_validation['error'],
+                'suggestions' => self::suggest_tenant_slugs($tenant_slug),
+            ], 422);
+        }
+
+        $domain = $tenant_slug . '.' . preg_replace('#^https?://#', '', network_home_url());
+        $domain = preg_replace('#/.*$#', '', $domain);
+
+        if (domain_exists($domain, '/', get_current_network_id())) {
+            return new WP_REST_Response([
+                'success' => false,
+                'error' => 'Tenant already exists',
+                'suggestions' => self::suggest_tenant_slugs($tenant_slug),
+            ], 409);
+        }
+
+        $storefront = wp_get_theme('storefront');
+        $child = wp_get_theme('printonet-theme');
+        if (!$storefront->exists() || !$child->exists()) {
+            return new WP_REST_Response([
+                'success' => false,
+                'error' => 'Required themes missing on this server: install the Storefront parent theme '
+                    . '(wp theme install storefront) and deploy the printonet-theme child under wp-content/themes/.',
+            ], 500);
+        }
+
+        $site_id = wpmu_create_blog(
+            $domain,
+            '/',
+            sanitize_text_field($payload['store_name']),
+            1,
+            [],
+            get_current_network_id()
+        );
+
+        if (is_wp_error($site_id)) {
+            return new WP_REST_Response([
+                'success' => false,
+                'error' => $site_id->get_error_message(),
+            ], 500);
+        }
+
+        $admin_credentials = self::ensure_tenant_admin((int) $site_id, $payload);
+        $admin_user_id = (int) ($admin_credentials['user_id'] ?? 1);
+
+        switch_to_blog((int) $site_id);
+        update_option('blogname', sanitize_text_field($payload['store_name']));
+        self::apply_default_woo_settings($payload);
+
+        // Storefront reads logo / accent from theme mods; those apply to the active stylesheet only.
+        switch_theme('printonet-theme');
+        Printonet_Branding::provision_defaults($payload, (int) $admin_user_id);
+        restore_current_blog();
+
+        $store_url = 'https://' . $domain;
+        $access_urls = self::build_store_access_urls($store_url);
+        $response_data = [
+            'success' => true,
+            'site_id' => $site_id,
+            'admin_user_id' => $admin_user_id,
+            'admin_username' => (string) ($admin_credentials['username'] ?? ''),
+            'admin_password' => (string) ($admin_credentials['password'] ?? ''),
+            'store_url' => $store_url,
+            'store_admin_url' => $access_urls['store_admin_url'],
+            'store_login_url' => $access_urls['store_login_url'],
+        ];
+
+        if ($request_id !== '') {
+            self::store_request_id_mapping($request_id, $response_data);
+        }
+
+        return new WP_REST_Response($response_data, 201);
+    }
+
+    public static function slug_availability(WP_REST_Request $request): WP_REST_Response
+    {
+        $payload = $request->get_json_params();
+        $input = isset($payload['tenant_slug']) ? (string) $payload['tenant_slug'] : '';
+        if ($input === '' && !empty($payload['store_name'])) {
+            $input = (string) $payload['store_name'];
+        }
+
+        $tenant_slug = sanitize_title($input);
+        $validation = self::validate_tenant_slug($tenant_slug);
+        if (!$validation['valid']) {
+            return new WP_REST_Response([
+                'success' => true,
+                'tenant_slug' => $tenant_slug,
+                'available' => false,
+                'reason' => (string) $validation['error'],
+                'suggestions' => self::suggest_tenant_slugs($tenant_slug),
+            ], 200);
+        }
+
+        $domain = self::tenant_domain($tenant_slug);
+        $available = !domain_exists($domain, '/', get_current_network_id());
+
+        return new WP_REST_Response([
+            'success' => true,
+            'tenant_slug' => $tenant_slug,
+            'available' => $available,
+            'domain' => $domain,
+            'suggestions' => $available ? [] : self::suggest_tenant_slugs($tenant_slug),
+        ], 200);
+    }
+
+    /**
+     * Permanently removes a tenant subsite (drops tables). Same HMAC auth as provision-store.
+     */
+    public static function delete_store(WP_REST_Request $request): WP_REST_Response
+    {
+        require_once ABSPATH . 'wp-admin/includes/ms.php';
+
+        $payload = $request->get_json_params();
+        $request_id = isset($payload['request_id']) ? sanitize_key((string) $payload['request_id']) : '';
+
+        if ($request_id !== '') {
+            $existing_delete = self::find_existing_delete_by_request_id($request_id);
+            if (!empty($existing_delete['deleted_at'])) {
+                return new WP_REST_Response([
+                    'success' => true,
+                    'idempotent' => true,
+                    'site_id' => (int) ($existing_delete['site_id'] ?? 0),
+                    'tenant_slug' => (string) ($existing_delete['tenant_slug'] ?? ''),
+                ], 200);
+            }
+        }
+
+        if (empty($payload['tenant_slug'])) {
+            return new WP_REST_Response([
+                'success' => false,
+                'error' => 'Missing required field: tenant_slug',
+            ], 422);
+        }
+
+        $tenant_slug = sanitize_title((string) $payload['tenant_slug']);
+        $slug_validation = self::validate_tenant_slug($tenant_slug);
+        if (!$slug_validation['valid']) {
+            return new WP_REST_Response([
+                'success' => false,
+                'error' => (string) $slug_validation['error'],
+            ], 422);
+        }
+
+        $domain = self::tenant_domain($tenant_slug);
+        $blog_id = (int) get_blog_id_from_url($domain, '/');
+
+        if ($blog_id === 0) {
+            return new WP_REST_Response([
+                'success' => true,
+                'already_deleted' => true,
+                'tenant_slug' => $tenant_slug,
+            ], 200);
+        }
+
+        if ($blog_id === 1 || is_main_site($blog_id)) {
+            return new WP_REST_Response([
+                'success' => false,
+                'error' => 'Cannot delete the main network site',
+            ], 403);
+        }
+
+        wpmu_delete_blog($blog_id, true);
+
+        $response_data = [
+            'success' => true,
+            'site_id' => $blog_id,
+            'tenant_slug' => $tenant_slug,
+        ];
+
+        if ($request_id !== '') {
+            self::store_delete_request_id_mapping($request_id, $response_data);
+        }
+
+        return new WP_REST_Response($response_data, 200);
+    }
+
+    private static function delete_idempotency_option_key(string $request_id): string
+    {
+        return self::DELETE_IDEMPOTENCY_OPTION_PREFIX . md5($request_id);
+    }
+
+    private static function find_existing_delete_by_request_id(string $request_id): array
+    {
+        $key = self::delete_idempotency_option_key($request_id);
+        $value = get_site_option($key, []);
+
+        return is_array($value) ? $value : [];
+    }
+
+    private static function store_delete_request_id_mapping(string $request_id, array $response_data): void
+    {
+        $key = self::delete_idempotency_option_key($request_id);
+        update_site_option($key, [
+            'site_id' => (int) ($response_data['site_id'] ?? 0),
+            'tenant_slug' => (string) ($response_data['tenant_slug'] ?? ''),
+            'deleted_at' => current_time('mysql'),
+        ]);
+    }
+
+    private static function idempotency_option_key(string $request_id): string
+    {
+        return self::IDEMPOTENCY_OPTION_PREFIX . md5($request_id);
+    }
+
+    private static function find_existing_by_request_id(string $request_id): array
+    {
+        $key = self::idempotency_option_key($request_id);
+        $value = get_site_option($key, []);
+
+        return is_array($value) ? $value : [];
+    }
+
+    private static function store_request_id_mapping(string $request_id, array $response_data): void
+    {
+        $key = self::idempotency_option_key($request_id);
+        update_site_option($key, [
+            'site_id' => (int) ($response_data['site_id'] ?? 0),
+            'admin_user_id' => (int) ($response_data['admin_user_id'] ?? 0),
+            'admin_username' => (string) ($response_data['admin_username'] ?? ''),
+            'admin_password' => (string) ($response_data['admin_password'] ?? ''),
+            'store_url' => (string) ($response_data['store_url'] ?? ''),
+            'created_at' => current_time('mysql'),
+        ]);
+    }
+
+    /**
+     * @return array{user_id:int,username:string,password:string}
+     */
+    private static function ensure_tenant_admin(int $site_id, array $payload): array
+    {
+        $email = sanitize_email((string) $payload['admin_email']);
+        $username = !empty($payload['admin_username'])
+            ? sanitize_user((string) $payload['admin_username'], true)
+            : sanitize_user(str_replace('@', '_', $email), true);
+        $password = !empty($payload['admin_password'])
+            ? (string) $payload['admin_password']
+            : wp_generate_password(20, true, true);
+
+        if (!is_email($email)) {
+            return [
+                'user_id' => 1,
+                'username' => $username,
+                'password' => $password,
+            ];
+        }
+
+        $user = get_user_by('email', $email);
+        if (!$user) {
+            $user_id = wp_create_user($username, $password, $email);
+            if (is_wp_error($user_id)) {
+                $fallback_username = sanitize_user($username . '_' . wp_generate_password(4, false, false), true);
+                $user_id = wp_create_user($fallback_username, $password, $email);
+                if (is_wp_error($user_id)) {
+                    return [
+                        'user_id' => 1,
+                        'username' => $username,
+                        'password' => $password,
+                    ];
+                }
+                $username = $fallback_username;
+            }
+        } else {
+            $user_id = (int) $user->ID;
+            if (!empty($payload['admin_password'])) {
+                wp_set_password($password, $user_id);
+            } else {
+                $password = '';
+            }
+            $username = (string) $user->user_login;
+        }
+
+        add_user_to_blog($site_id, $user_id, 'administrator');
+        return [
+            'user_id' => (int) $user_id,
+            'username' => $username,
+            'password' => $password,
+        ];
+    }
+
+    private static function apply_default_woo_settings(array $payload): void
+    {
+        update_option('woocommerce_currency', sanitize_text_field($payload['currency'] ?? 'USD'));
+        update_option('woocommerce_default_country', sanitize_text_field($payload['default_country'] ?? 'US:CA'));
+        update_option('woocommerce_weight_unit', sanitize_text_field($payload['weight_unit'] ?? 'lbs'));
+        update_option('woocommerce_dimension_unit', sanitize_text_field($payload['dimension_unit'] ?? 'in'));
+
+        // Start with lightweight checkout while preserving store flexibility.
+        update_option('woocommerce_enable_guest_checkout', 'yes');
+        update_option('woocommerce_enable_signup_and_login_from_checkout', 'yes');
+
+        // Ensure storefront is publicly visible after provisioning.
+        update_option('woocommerce_coming_soon', 'no');
+        update_option('woocommerce_feature_site_visibility_badge_enabled', 'no');
+    }
+
+    private static function validate_tenant_slug(string $tenant_slug): array
+    {
+        if ($tenant_slug === '') {
+            return ['valid' => false, 'error' => 'Tenant slug is empty'];
+        }
+
+        if (strlen($tenant_slug) > self::SLUG_MAX_LENGTH) {
+            return ['valid' => false, 'error' => 'Tenant slug is too long'];
+        }
+
+        if (!preg_match('/^[a-z0-9]+(?:-[a-z0-9]+)*$/', $tenant_slug)) {
+            return ['valid' => false, 'error' => 'Tenant slug has invalid format'];
+        }
+
+        if (in_array($tenant_slug, self::RESERVED_SLUGS, true)) {
+            return ['valid' => false, 'error' => 'Tenant slug is reserved'];
+        }
+
+        return ['valid' => true];
+    }
+
+    private static function suggest_tenant_slugs(string $base_slug): array
+    {
+        $base_slug = substr($base_slug, 0, self::SLUG_MAX_LENGTH);
+        if ($base_slug === '') {
+            $base_slug = 'store';
+        }
+
+        $candidates = [
+            $base_slug . '-shop',
+            $base_slug . '-co',
+            $base_slug . '-store',
+            $base_slug . '-1',
+            $base_slug . '-2',
+            $base_slug . '-3',
+        ];
+
+        $suggestions = [];
+        foreach ($candidates as $candidate) {
+            $candidate = substr($candidate, 0, self::SLUG_MAX_LENGTH);
+            $validation = self::validate_tenant_slug($candidate);
+            if (!$validation['valid']) {
+                continue;
+            }
+
+            $domain = self::tenant_domain($candidate);
+            if (!domain_exists($domain, '/', get_current_network_id())) {
+                $suggestions[] = $candidate;
+            }
+
+            if (count($suggestions) >= 4) {
+                break;
+            }
+        }
+
+        return $suggestions;
+    }
+
+    private static function tenant_domain(string $tenant_slug): string
+    {
+        $domain = $tenant_slug . '.' . preg_replace('#^https?://#', '', network_home_url());
+        return (string) preg_replace('#/.*$#', '', $domain);
+    }
+
+    /**
+     * Build direct access URLs to tenant WordPress admin/login for main-platform UX.
+     *
+     * @return array{store_admin_url:string,store_login_url:string}
+     */
+    private static function build_store_access_urls(string $store_url): array
+    {
+        $store_url = untrailingslashit(trim($store_url));
+        if ($store_url === '') {
+            return [
+                'store_admin_url' => '',
+                'store_login_url' => '',
+            ];
+        }
+
+        return [
+            'store_admin_url' => $store_url . '/wp-admin/',
+            'store_login_url' => $store_url . '/wp-login.php',
+        ];
+    }
+
+    /**
+     * Resolve a tenant subsite blog ID from its subdomain slug. Returns 0 if invalid or not found.
+     */
+    public static function resolve_tenant_blog_id(string $tenant_slug): int
+    {
+        $tenant_slug = sanitize_title((string) $tenant_slug);
+        $validation = self::validate_tenant_slug($tenant_slug);
+        if (!$validation['valid']) {
+            return 0;
+        }
+
+        $domain = self::tenant_domain($tenant_slug);
+
+        return (int) get_blog_id_from_url($domain, '/');
+    }
+}

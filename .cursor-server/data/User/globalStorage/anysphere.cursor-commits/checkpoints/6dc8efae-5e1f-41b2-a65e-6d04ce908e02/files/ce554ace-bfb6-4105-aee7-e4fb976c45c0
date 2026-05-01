@@ -1,0 +1,39 @@
+# Printonet Provisioning API Contract
+
+## Endpoint
+
+- `POST /wp-json/printonet/v1/provision-store`
+
+## Authentication
+
+- Header: `X-Printonet-Api-Key: <PROVISIONING_API_KEY>`
+
+## Request body
+
+```json
+{
+  "tenant_slug": "acme-print",
+  "store_name": "Acme Print",
+  "admin_email": "owner@acmeprint.com",
+  "primary_color": "#0f172a",
+  "secondary_color": "#f8fafc",
+  "logo_url": "https://cdn.printonet.com/logos/acme.png"
+}
+```
+
+## Success response
+
+```json
+{
+  "success": true,
+  "site_id": 12,
+  "store_url": "https://acme-print.stores.printonet.local"
+}
+```
+
+## Error responses
+
+- `401/403`: invalid API key
+- `409`: tenant already exists
+- `422`: missing required fields
+- `500`: site creation failure

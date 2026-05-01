@@ -1,0 +1,197 @@
+<?php
+
+if (!defined('ABSPATH')) {
+    exit;
+}
+
+get_header();
+
+$products = printonet_theme_get_products(30);
+$product_categories = get_terms([
+    'taxonomy' => 'product_cat',
+    'hide_empty' => true,
+    'number' => 6,
+]);
+if (is_wp_error($product_categories)) {
+    $product_categories = [];
+}
+
+$latest_posts = get_posts([
+    'post_type' => 'post',
+    'post_status' => 'publish',
+    'numberposts' => 3,
+]);
+
+$hero_cta_url = function_exists('wc_get_page_permalink') ? wc_get_page_permalink('shop') : home_url('/shop');
+$hero_image = printonet_theme_banner_placeholder('hero');
+$promo_one_image = printonet_theme_banner_placeholder('intro');
+$promo_two_image = printonet_theme_banner_placeholder('story');
+
+$featured_products = array_slice($products, 0, min(10, count($products)));
+$deal_products = array_slice($products, 10, 4);
+if (count($deal_products) < 4) {
+    $deal_products = array_slice($products, 0, min(4, count($products)));
+}
+$bestsellers = array_slice($products, 14, 10);
+if (count($bestsellers) < 10) {
+    $bestsellers = array_slice($products, 0, min(10, count($products)));
+}
+
+$render_product_card = static function ($product, int $index = 0): void {
+    if (!$product) {
+        return;
+    }
+    $image = $product->get_image_id()
+        ? wp_get_attachment_image_url($product->get_image_id(), 'medium_large')
+        : printonet_theme_placeholder_image('product-' . $index);
+    ?>
+    <article class="printonet-pets-card">
+      <a class="printonet-pets-card__media" href="<?php echo esc_url(get_permalink($product->get_id())); ?>">
+        <span class="printonet-pets-card__badge">Top pick</span>
+        <img src="<?php echo esc_url($image); ?>" alt="<?php echo esc_attr($product->get_name()); ?>">
+      </a>
+      <div class="printonet-pets-card__meta">
+        <a class="printonet-pets-card__title" href="<?php echo esc_url(get_permalink($product->get_id())); ?>"><?php echo esc_html($product->get_name()); ?></a>
+        <div class="printonet-pets-card__price"><?php echo wp_kses_post($product->get_price_html()); ?></div>
+      </div>
+    </article>
+    <?php
+};
+?>
+
+<main id="primary" class="site-main printonet-pets-home">
+  <section class="printonet-pets-shell printonet-pets-hero-grid">
+    <article class="printonet-pets-hero">
+      <img src="<?php echo esc_url($hero_image); ?>" alt="Hero banner">
+      <div class="printonet-pets-hero__overlay">
+        <span class="printonet-pets-pill">Printonet Theme</span>
+        <h1>Everything your brand needs, in one storefront.</h1>
+        <p>Build a premium shopping experience with clean sections, strong merchandising, and fast product discovery.</p>
+        <a class="printonet-pets-btn" href="<?php echo esc_url($hero_cta_url); ?>">Shop now</a>
+      </div>
+    </article>
+
+    <div class="printonet-pets-hero-side">
+      <article class="printonet-pets-promo">
+        <img src="<?php echo esc_url($promo_one_image); ?>" alt="Promo one">
+        <div class="printonet-pets-promo__overlay">
+          <h3>Designed to elevate your print brand.</h3>
+        </div>
+      </article>
+      <article class="printonet-pets-promo">
+        <img src="<?php echo esc_url($promo_two_image); ?>" alt="Promo two">
+        <div class="printonet-pets-promo__overlay">
+          <h3>Every print tells a story worth sharing.</h3>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <?php if (!empty($product_categories)) : ?>
+  <section class="printonet-pets-shell printonet-pets-categories">
+    <?php foreach ($product_categories as $idx => $category) :
+        $thumb_id = (int) get_term_meta($category->term_id, 'thumbnail_id', true);
+        $image = $thumb_id ? wp_get_attachment_image_url($thumb_id, 'thumbnail') : printonet_theme_placeholder_image('cat-icon-' . $idx);
+        ?>
+      <a class="printonet-pets-category" href="<?php echo esc_url(get_term_link($category)); ?>">
+        <span class="printonet-pets-category__icon"><img src="<?php echo esc_url($image); ?>" alt="<?php echo esc_attr($category->name); ?>"></span>
+        <span class="printonet-pets-category__name"><?php echo esc_html($category->name); ?></span>
+      </a>
+    <?php endforeach; ?>
+  </section>
+  <?php endif; ?>
+
+  <section class="printonet-pets-shell printonet-pets-section">
+    <header class="printonet-pets-section__head">
+      <h2>Featured products</h2>
+      <a href="<?php echo esc_url($hero_cta_url); ?>">View all</a>
+    </header>
+    <div class="printonet-pets-grid printonet-pets-grid--five">
+      <?php foreach ($featured_products as $index => $product) :
+          $render_product_card($product, $index);
+      endforeach; ?>
+    </div>
+  </section>
+
+  <section class="printonet-pets-trust">
+    <div class="printonet-pets-shell printonet-pets-trust__inner">
+      <div><strong>Free shipping</strong><span>Over qualifying orders</span></div>
+      <div><strong>Fast fulfillment</strong><span>Built for production speed</span></div>
+      <div><strong>Premium quality</strong><span>Color-accurate print standards</span></div>
+      <div><strong>Live support</strong><span>Friendly team, real help</span></div>
+    </div>
+  </section>
+  <section class="printonet-pets-brand-strip-wrap">
+    <div class="printonet-pets-shell printonet-pets-brand-strip">
+      <span>Trusted by growing brands:</span>
+      <strong>ADIDAS</strong><strong>NIKE</strong><strong>PUMA</strong><strong>NEW ERA</strong><strong>UNDER ARMOUR</strong>
+    </div>
+  </section>
+
+
+  <section class="printonet-pets-shell printonet-pets-deals">
+    <article class="printonet-pets-deal-banner">
+      <img src="<?php echo esc_url($promo_one_image); ?>" alt="Deal banner">
+      <div class="printonet-pets-deal-banner__overlay">
+        <span class="printonet-pets-pill">Weekly focus</span>
+        <h2>Spring campaign picks</h2>
+        <p>Curated products ready for your next launch.</p>
+        <a class="printonet-pets-btn" href="<?php echo esc_url($hero_cta_url); ?>">Explore deals</a>
+      </div>
+    </article>
+    <div class="printonet-pets-grid printonet-pets-grid--two">
+      <?php foreach ($deal_products as $index => $product) :
+          $render_product_card($product, 100 + $index);
+      endforeach; ?>
+    </div>
+  </section>
+
+  <section class="printonet-pets-shell printonet-pets-section">
+    <header class="printonet-pets-section__head">
+      <h2>Bestsellers</h2>
+      <a href="<?php echo esc_url($hero_cta_url); ?>">Shop top sellers</a>
+    </header>
+    <div class="printonet-pets-grid printonet-pets-grid--five">
+      <?php foreach ($bestsellers as $index => $product) :
+          $render_product_card($product, 200 + $index);
+      endforeach; ?>
+    </div>
+  </section>
+
+  <?php if (!empty($latest_posts)) : ?>
+  <section class="printonet-pets-shell printonet-pets-section">
+    <header class="printonet-pets-section__head">
+      <h2>From the journal</h2>
+      <a href="<?php echo esc_url(home_url('/blog')); ?>">Read more</a>
+    </header>
+    <div class="printonet-pets-grid printonet-pets-grid--three">
+      <?php foreach ($latest_posts as $post) :
+          $thumb = get_the_post_thumbnail_url($post->ID, 'large') ?: printonet_theme_placeholder_image('story-' . $post->ID);
+          ?>
+        <article class="printonet-pets-story">
+          <a class="printonet-pets-story__media" href="<?php echo esc_url(get_permalink($post->ID)); ?>">
+            <img src="<?php echo esc_url($thumb); ?>" alt="<?php echo esc_attr(get_the_title($post->ID)); ?>">
+          </a>
+          <div class="printonet-pets-story__meta">
+            <a class="printonet-pets-story__title" href="<?php echo esc_url(get_permalink($post->ID)); ?>"><?php echo esc_html(get_the_title($post->ID)); ?></a>
+            <p><?php echo esc_html(wp_trim_words(get_the_excerpt($post->ID), 18)); ?></p>
+          </div>
+        </article>
+      <?php endforeach; ?>
+    </div>
+  </section>
+  <?php endif; ?>
+
+  <section class="printonet-pets-newsletter">
+    <div class="printonet-pets-shell printonet-pets-newsletter__inner">
+      <div>
+        <h2>Get launch-ready design and product ideas.</h2>
+        <p>Weekly tips to help your store sell more with better merchandising.</p>
+      </div>
+      <a class="printonet-pets-btn" href="<?php echo esc_url(home_url('/my-account')); ?>">Join updates</a>
+    </div>
+  </section>
+</main>
+
+<?php
+get_footer();

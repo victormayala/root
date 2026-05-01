@@ -1,0 +1,9 @@
+2026-05-01 00:29:17.270 [info] rg_diagnostics.startup {"rgPath":"/root/.cursor-server/bin/linux-x64/3e548838cf824b70851dd3ef27d0c6aae371b3f0/node_modules/@vscode/ripgrep/bin/rg","rgPathExists":true,"rgParentDirExists":true,"platform":"linux","arch":"x64","nodeVersion":"v20.18.2","extensionPath":"/root/.cursor-server/bin/linux-x64/3e548838cf824b70851dd3ef27d0c6aae371b3f0/extensions/cursor-agent-exec","execPath":"/root/.cursor-server/bin/linux-x64/3e548838cf824b70851dd3ef27d0c6aae371b3f0/node","remoteName":"ssh-remote","uiKind":"desktop","rgFileSize":5396392,"rgFileMode":"100755","rgIsFile":true,"parentDirContents":["rg"],"grandparentDirExists":true,"grandparentDirContents":["LICENSE","SECURITY.md","bin","build","jsconfig.json","lib","node_modules","package.json"]}
+2026-05-01 00:29:17.270 [info] cursor_agent_exec.startup.workspace_paths {"workspacePathCount":1,"workspacePaths":["/root"]}
+2026-05-01 00:29:17.508 [info] managed_skills.removed {"skill_id":"cursor","reason":"enabled_false","server_enabled":false,"had_manifest_entry":false,"last_synced_ms_ago":null}
+2026-05-01 00:29:17.509 [info] managed_skills.removed {"skill_id":"cursor-blame","reason":"enabled_false","server_enabled":false,"had_manifest_entry":false,"last_synced_ms_ago":null}
+2026-05-01 00:29:17.510 [info] managed_skills.removed {"skill_id":"review-cursor-links","reason":"enabled_false","server_enabled":false,"had_manifest_entry":false,"last_synced_ms_ago":null}
+2026-05-01 00:29:17.642 [info] cursor_agent_exec.startup.activation_latency {"durationMs":865}
+2026-05-01 00:29:18.106 [info] LocalCursorRulesService load completed {"durationMs":472,"ruleCount":0}
+2026-05-01 00:29:18.155 [info] AgentSkillsCursorRulesService load completed {"durationMs":518,"ruleCount":11,"skillCount":11}
+2026-05-01 00:29:18.403 [info] CursorPluginsAgentSkillsService load completed {"durationMs":765,"ruleCount":0,"skillCount":0}

@@ -1,0 +1,58 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ENV_FILE="${1:-.env}"
+if [[ ! -f "$ENV_FILE" ]]; then
+  echo "Missing env file: $ENV_FILE"
+  exit 1
+fi
+
+set -a
+source "$ENV_FILE"
+set +a
+
+mkdir -p "$WP_PATH"
+cd "$WP_PATH"
+
+if [[ ! -f "wp-config.php" ]]; then
+  sudo -u www-data wp core download --allow-root
+  sudo -u www-data wp config create \
+    --dbname="$DB_NAME" \
+    --dbuser="$DB_USER" \
+    --dbpass="$DB_PASSWORD" \
+    --dbhost="localhost" \
+    --dbprefix="wp_" \
+    --allow-root
+
+  sudo -u www-data wp core install \
+    --url="$WP_URL" \
+    --title="Printonet Network" \
+    --admin_user="$WP_ADMIN_USER" \
+    --admin_password="$WP_ADMIN_PASSWORD" \
+    --admin_email="$WP_ADMIN_EMAIL" \
+    --skip-email \
+    --allow-root
+fi
+
+sudo -u www-data wp config set PRINTONET_PROVISIONING_API_KEY "'${PROVISIONING_API_KEY}'" --allow-root
+if [[ -n "${SUPPLIER_WEBHOOK_SECRET:-}" ]]; then
+  sudo -u www-data wp config set PRINTONET_SUPPLIER_WEBHOOK_SECRET "'${SUPPLIER_WEBHOOK_SECRET}'" --allow-root
+fi
+if [[ -n "${INTERNAL_SUPPLIER_API_URL:-}" ]]; then
+  sudo -u www-data wp config set PRINTONET_INTERNAL_SUPPLIER_API_URL "'${INTERNAL_SUPPLIER_API_URL}'" --allow-root
+fi
+if [[ -n "${INTERNAL_SUPPLIER_API_KEY:-}" ]]; then
+  sudo -u www-data wp config set PRINTONET_INTERNAL_SUPPLIER_API_KEY "'${INTERNAL_SUPPLIER_API_KEY}'" --allow-root
+fi
+sudo -u www-data wp core multisite-convert --subdomains --allow-root
+sudo -u www-data wp plugin install woocommerce --activate-network --allow-root
+
+# Deploy shared code from repo
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+rsync -a --delete "${REPO_ROOT}/wp-content/mu-plugins/" "${WP_PATH}/wp-content/mu-plugins/"
+rsync -a --delete "${REPO_ROOT}/wp-content/themes/printonet-storefront/" "${WP_PATH}/wp-content/themes/printonet-storefront/"
+
+sudo -u www-data wp site list --fields=blog_id,url --allow-root
+
+echo "Multisite install complete."
+echo "Remember to configure wildcard DNS and SSL for *.${APP_DOMAIN}"

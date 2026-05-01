@@ -1,0 +1,378 @@
+# Printonet Provisioning API Contract
+
+## Endpoint
+
+- `POST /wp-json/printonet/v1/provision-store`
+- `POST /wp-json/printonet/v1/delete-store`
+- `POST /wp-json/printonet/v1/slug-availability`
+- `POST /wp-json/printonet/v1/tenant/config`
+- `POST /wp-json/printonet/v1/tenant/pull-sync`
+- `GET /wp-json/printonet/v1/tenant/pull-sync-status`
+- `POST /wp-json/printonet/v1/suppliers/sync`
+- `POST /wp-json/printonet/v1/suppliers/validate`
+- `GET /wp-json/printonet/v1/suppliers/sync-status/{job_id}`
+- `POST /wp-json/printonet/v1/suppliers/webhook`
+
+## Authentication
+
+- Preferred signed request headers:
+  - `X-Printonet-Timestamp: <unix_epoch_seconds>`
+  - `X-Printonet-Signature: <hex_hmac_sha256(timestamp + "." + raw_body, PLATFORM_HMAC_SECRET)>`
+- Optional legacy fallback (only if `PRINTONET_ALLOW_LEGACY_API_KEY=true`):
+  - `X-Printonet-Api-Key: <PROVISIONING_API_KEY>`
+
+Replay protection:
+
+- A valid signature can only be used once for the same method/route/timestamp/signature tuple.
+- Reuse inside the 5-minute window is rejected.
+
+## Request body
+
+```json
+{
+  "tenant_slug": "acme-print",
+  "request_id": "optional-idempotency-key-123",
+  "store_name": "Acme Print",
+  "admin_email": "owner@acmeprint.com",
+  "admin_username": "acme_owner",
+  "admin_password": "optional-strong-password",
+  "primary_color": "#0f172a",
+  "secondary_color": "#f8fafc",
+  "logo_url": "https://cdn.printonet.com/logos/acme.png",
+  "favicon_url": "https://cdn.printonet.com/favicons/acme.png",
+  "currency": "USD",
+  "default_country": "US:CA",
+  "weight_unit": "lbs",
+  "dimension_unit": "in"
+}
+```
+
+If **`favicon_url`** is omitted, the engine installs the bundled network favicon from **`wp-content/mu-plugins/printonet-core/assets/favicon.ico`** as the WordPress site icon. Provide **`favicon_url`** to override per store.
+
+Slug policy:
+
+- lowercase letters, numbers, hyphens only
+- max length: 40
+- reserved slugs blocked (`www`, `admin`, `api`, `support`, `stores`, etc.)
+
+## Delete store request
+
+`POST /wp-json/printonet/v1/delete-store` — permanently deletes the tenant subsite (database tables dropped). Same HMAC signing as `provision-store`.
+
+```json
+{
+  "tenant_slug": "acme-print",
+  "request_id": "optional-idempotency-key-for-delete"
+}
+```
+
+Responses:
+
+- **200** — `{ "success": true, "site_id": 12, "tenant_slug": "acme-print" }` after deletion.
+- **200** — `{ "success": true, "already_deleted": true, "tenant_slug": "acme-print" }` if that tenant site no longer exists (safe to treat as success when the dashboard retries).
+- **200** — `{ "success": true, "idempotent": true, ... }` if `request_id` was already used for a successful delete.
+- **403** — attempt to delete the main network site (never allowed).
+- **422** — missing `tenant_slug` or invalid slug format.
+
+## Slug availability request
+
+```json
+{
+  "store_name": "Great Prints"
+}
+```
+
+or
+
+```json
+{
+  "tenant_slug": "greatprints"
+}
+```
+
+## Slug availability response
+
+```json
+{
+  "success": true,
+  "tenant_slug": "greatprints",
+  "available": false,
+  "domain": "greatprints.stores.printonet.com",
+  "suggestions": ["greatprints-shop", "greatprints-co"]
+}
+```
+
+## Tenant config update request
+
+Use this to push dashboard-driven config to each tenant store.
+
+**Targeting:** Either send the request to the tenant origin (e.g. `https://greatprints.stores.printonet.com/...`) **or** send it to the **network base** (`https://stores.printonet.com/...`) and include **`tenant_slug`** in the JSON body (same signing rules). Do not send a `tenant_slug` that disagrees with the request hostname when calling a tenant URL.
+
+```json
+{
+  "tenant_slug": "greatprints",
+  "config_version": 12,
+  "pull_sync_interval_minutes": 15,
+  "status": "active",
+  "branding": {
+    "store_name": "Great Prints",
+    "logo_url": "https://cdn.printonet.com/logos/greatprints.png",
+    "favicon_url": "https://cdn.printonet.com/favicons/greatprints.png",
+    "primary_color": "#0f172a",
+    "secondary_color": "#f8fafc",
+    "font_family": "Inter, sans-serif"
+  },
+  "woocommerce": {
+    "currency": "USD",
+    "default_country": "US:CA",
+    "weight_unit": "lbs",
+    "dimension_unit": "in"
+  },
+  "layout": {
+    "hero_style": "split"
+  },
+  "homepage_sections": [
+    { "id": "hero", "enabled": true },
+    { "id": "featured_products", "enabled": true }
+  ]
+}
+```
+
+`status` values:
+
+- `active` — storefront open for purchases (guest policy unchanged).
+- `paused` — alias for **`suspended`** (checkout/purchasing blocked for guests; same behavior as suspended).
+- `suspended` — checkout/purchasing blocked.
+
+Include **`woocommerce`** only when updating currency, country, or units (same fields as `provision-store`).
+
+## Tenant config read response
+
+`GET /wp-json/printonet/v1/tenant/config`
+
+Optional query when calling the network base: **`?tenant_slug=greatprints`**. Same hostname rule as POST: if you call a tenant host, `tenant_slug` must match.
+
+```json
+{
+  "success": true,
+  "tenant_slug": "greatprints",
+  "status": "active",
+  "branding": {
+    "store_name": "Great Prints",
+    "logo_url": "https://cdn.printonet.com/logos/greatprints.png",
+    "favicon_url": "https://cdn.printonet.com/favicons/greatprints.png",
+    "primary_color": "#0f172a",
+    "secondary_color": "#f8fafc",
+    "font_family": "Inter, sans-serif"
+  },
+  "woocommerce": {
+    "currency": "USD",
+    "default_country": "US:CA",
+    "weight_unit": "lbs",
+    "dimension_unit": "in"
+  },
+  "layout": { "hero_style": "split" },
+  "homepage_sections": [],
+  "config_version": 12,
+  "config_hash": "sha256-hash",
+  "synced_at": "2026-04-29 17:00:00"
+}
+```
+
+Versioning behavior:
+
+- If update payload has `config_version` lower than current stored version, API returns `409` (stale update rejected).
+- Optional `pull_sync_interval_minutes` controls tenant pull cadence (`5`, `15`, or `60`).
+
+## Tenant pull sync (manual trigger)
+
+`POST /wp-json/printonet/v1/tenant/pull-sync`
+
+- Pulls latest config from `PRINTONET_DASHBOARD_CONFIG_FEED_URL` using signed GET:
+  - query: `tenant_slug=<store_host>`
+  - headers: `X-Printonet-Timestamp`, `X-Printonet-Signature` where signature is `HMAC_SHA256("${timestamp}.", PLATFORM_HMAC_SECRET)`
+- Applies config using same validation/versioning path as `POST /tenant/config`.
+
+When calling from the **network base URL**, send JSON **`{ "tenant_slug": "greatprints" }`** so the engine switches to that subsite before pulling (same host/slug rule as config).
+
+## Tenant pull sync status
+
+`GET /wp-json/printonet/v1/tenant/pull-sync-status`
+
+Optional query from the network base: **`?tenant_slug=greatprints`** (same hostname rule as config GET).
+
+```json
+{
+  "success": true,
+  "tenant_slug": "greatprints",
+  "last_pull_status": "success",
+  "last_pull_at": "2026-04-29 17:30:00",
+  "last_pull_error": "",
+  "last_pull_source": "https://.../tenant-config-feed",
+  "last_config_sync": "2026-04-29 17:30:00",
+  "config_version": 13,
+  "config_hash": "sha256-hash",
+  "pull_sync_interval_minutes": 15,
+  "pull_fail_count": 0,
+  "circuit_open_until": 0,
+  "circuit_alert": false
+}
+```
+
+## Success response
+
+```json
+{
+  "success": true,
+  "site_id": 12,
+  "admin_user_id": 56,
+  "store_url": "https://acme-print.stores.printonet.local",
+  "store_admin_url": "https://acme-print.stores.printonet.local/wp-admin/",
+  "store_login_url": "https://acme-print.stores.printonet.local/wp-login.php"
+}
+```
+
+If `request_id` is reused, endpoint returns existing tenant info with:
+
+```json
+{
+  "success": true,
+  "idempotent": true,
+  "site_id": 12,
+  "admin_user_id": 56,
+  "store_url": "https://acme-print.stores.printonet.local",
+  "store_admin_url": "https://acme-print.stores.printonet.local/wp-admin/",
+  "store_login_url": "https://acme-print.stores.printonet.local/wp-login.php"
+}
+```
+
+## Error responses
+
+- `401/403`: invalid API key
+- `409`: tenant already exists
+- `422`: missing required fields
+- `500`: site creation failure
+
+## Supplier sync request
+
+```json
+{
+  "supplier": "printonet_internal",
+  "credentials": {
+    "base_url": "https://qumrnazgdrijdcihtkah.supabase.co/functions/v1/tenant-catalog-feed",
+    "tenant_slug": "stores.printonet.com"
+  }
+}
+```
+
+If `supplier` is omitted, default is `printonet_internal`.
+
+## Supplier sync response
+
+```json
+{
+  "success": true,
+  "queued": true,
+  "job_id": 101,
+  "supplier": "printonet_internal"
+}
+```
+
+## Supplier validation request
+
+```json
+{
+  "supplier": "printful",
+  "credentials": {
+    "api_key": "supplier-token"
+  }
+}
+```
+
+For Printify, include `shop_id`:
+
+```json
+{
+  "supplier": "printify",
+  "credentials": {
+    "api_key": "supplier-token",
+    "shop_id": "123456"
+  }
+}
+```
+
+For internal supplier validation:
+
+```json
+{
+  "supplier": "printonet_internal",
+  "credentials": {
+    "base_url": "https://qumrnazgdrijdcihtkah.supabase.co/functions/v1/tenant-catalog-feed"
+  }
+}
+```
+
+Internal supplier call contract:
+
+- Method: `GET {base_url}?tenant_slug={slug}&limit=200`
+- Headers:
+  - `X-Printonet-Timestamp: <unix_seconds>`
+  - `X-Printonet-Signature: hex(HMAC-SHA256("${timestamp}.", PLATFORM_HMAC_SECRET))`
+
+Internal supplier response schema must return:
+
+```json
+{
+  "items": [
+    {
+      "sku": "TSHIRT-001",
+      "name": "Soft Cotton Tee",
+      "price": 24.99,
+      "stock": 120
+    }
+  ]
+}
+```
+
+Validation rules:
+
+- `items` must be an array
+- every item must include non-empty string `sku` and `name`
+- every item must include numeric `price` and `stock`
+
+## Supplier status response
+
+```json
+{
+  "success": true,
+  "job": {
+    "id": 101,
+    "blog_id": 12,
+    "supplier": "printful",
+    "status": "processing",
+    "attempts": 1,
+    "last_error": "",
+    "created_at": "2026-04-29 14:00:00",
+    "updated_at": "2026-04-29 14:00:10"
+  }
+}
+```
+
+## Supplier webhook request
+
+Authentication header:
+
+- `X-Printonet-Webhook-Secret: <SUPPLIER_WEBHOOK_SECRET>`
+
+Body:
+
+```json
+{
+  "event": "stock_price_update",
+  "blog_id": 12,
+  "items": [
+    { "sku": "TSHIRT-001", "price": "24.99", "stock": 120 },
+    { "sku": "TSHIRT-002", "stock": 0 }
+  ]
+}
+```

@@ -1,0 +1,31 @@
+2026-04-29 23:41:58.422 [info] 
+
+
+
+
+2026-04-29 23:41:58.430 [info] Extension host agent started.
+2026-04-29 23:41:59.035 [info] [127.0.0.1][29f96b9c][ManagementConnection] New connection established.
+2026-04-29 23:41:59.150 [info] Getting extensions control
+2026-04-29 23:41:59.207 [info] [127.0.0.1][52183196][ExtensionHostConnection] New connection established.
+2026-04-29 23:41:59.228 [info] [127.0.0.1][52183196][ExtensionHostConnection] <58179> Launched Extension Host Process.
+2026-04-29 23:42:13.319 [info] [CursorProclistService] Config enabled feature (subsample every 10s)
+2026-04-29 23:46:58.432 [info] New EH opened, aborting shutdown
+2026-04-30 00:00:30.926 [warning] RequestStore#acceptReply was called without receiving a matching request 13
+2026-04-30 00:00:30.926 [warning] RequestStore#acceptReply was called without receiving a matching request 14
+2026-04-30 00:00:30.927 [warning] RequestStore#acceptReply was called without receiving a matching request 15
+2026-04-30 00:00:30.928 [warning] RequestStore#acceptReply was called without receiving a matching request 16
+2026-04-30 00:00:30.929 [warning] RequestStore#acceptReply was called without receiving a matching request 17
+2026-04-30 00:00:30.929 [warning] RequestStore#acceptReply was called without receiving a matching request 18
+2026-04-30 00:00:30.929 [warning] RequestStore#acceptReply was called without receiving a matching request 19
+2026-04-30 00:00:30.929 [warning] RequestStore#acceptReply was called without receiving a matching request 20
+2026-04-30 00:00:30.929 [warning] RequestStore#acceptReply was called without receiving a matching request 21
+2026-04-30 00:00:30.929 [warning] RequestStore#acceptReply was called without receiving a matching request 22
+2026-04-30 00:00:30.929 [warning] RequestStore#acceptReply was called without receiving a matching request 23
+2026-04-30 00:00:30.929 [warning] RequestStore#acceptReply was called without receiving a matching request 24
+2026-04-30 03:04:50.893 [info] [127.0.0.1][52183196][ExtensionHostConnection] The client has reconnected.
+2026-04-30 03:04:51.238 [info] [127.0.0.1][29f96b9c][ManagementConnection] The client has reconnected.
+2026-04-30 03:09:32.150 [info] [127.0.0.1][52183196][ExtensionHostConnection] The client has reconnected.
+2026-04-30 03:41:53.295 [info] [127.0.0.1][29f96b9c][ManagementConnection] The client has disconnected gracefully, so the connection will be disposed.
+2026-04-30 03:41:53.374 [info] [127.0.0.1][52183196][ExtensionHostConnection] <58179> Extension Host Process exited with code: 0, signal: null.
+2026-04-30 03:41:53.374 [info] Last EH closed, waiting before shutting down
+2026-04-30 03:46:53.375 [info] Last EH closed, shutting down

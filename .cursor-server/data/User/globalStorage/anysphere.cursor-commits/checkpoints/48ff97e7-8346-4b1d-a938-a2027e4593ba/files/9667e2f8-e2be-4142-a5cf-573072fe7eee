@@ -1,0 +1,32 @@
+<?php
+
+if (!defined('ABSPATH')) {
+    exit;
+}
+
+add_action('wp_enqueue_scripts', static function () {
+    wp_enqueue_style(
+        'printonet-storefront-style',
+        get_stylesheet_uri(),
+        ['storefront-style'],
+        wp_get_theme()->get('Version')
+    );
+});
+
+add_action('wp_head', static function () {
+    $primary = get_option('printonet_brand_primary_color', '#111111');
+    $secondary = get_option('printonet_brand_secondary_color', '#ffffff');
+    $font = get_option('printonet_brand_font_family', 'inherit');
+    ?>
+    <style>
+      :root {
+        --printonet-primary: <?php echo esc_html($primary); ?>;
+        --printonet-secondary: <?php echo esc_html($secondary); ?>;
+        --printonet-font-family: <?php echo esc_html($font); ?>;
+      }
+      body {
+        font-family: var(--printonet-font-family);
+      }
+    </style>
+    <?php
+});

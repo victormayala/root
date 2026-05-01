@@ -1,0 +1,14 @@
+/*
+Theme Name: Printonet Storefront
+Theme URI: https://printonet.example
+Author: Printonet
+Description: Shared multi-tenant storefront theme for Printonet stores.
+Version: 0.1.0
+Template: storefront
+Text Domain: printonet-storefront
+*/
+
+:root {
+  --printonet-primary: #111111;
+  --printonet-secondary: #ffffff;
+}

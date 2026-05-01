@@ -1,0 +1,178 @@
+<?php
+
+if (!defined('ABSPATH')) {
+    exit;
+}
+
+add_action('after_setup_theme', static function () {
+    add_theme_support('title-tag');
+    add_theme_support('post-thumbnails');
+});
+
+add_action('wp_enqueue_scripts', static function () {
+    $style_path = get_stylesheet_directory() . '/style.css';
+    $style_version = file_exists($style_path) ? (string) filemtime($style_path) : wp_get_theme()->get('Version');
+
+    wp_enqueue_style(
+        'printonet-theme-style',
+        get_stylesheet_uri(),
+        ['storefront-style'],
+        $style_version
+    );
+
+    $accent = get_option('printonet_brand_primary_color', '#111111');
+    $accent = $accent !== '' ? $accent : '#111111';
+
+    wp_add_inline_style(
+        'printonet-theme-style',
+        '.printonet-btn, .printonet-pill { border-color: ' . esc_html($accent) . '; }
+        .printonet-btn:hover { color: ' . esc_html($accent) . '; }
+        .printonet-card__title:hover { color: ' . esc_html($accent) . '; }
+        .wc-block-components-button:not(.is-link):not(.wc-block-cart__submit-button) { background-color: ' . esc_html($accent) . '; color: #fff; }'
+    );
+});
+
+add_action('wp_head', static function () {
+    $primary = get_option('printonet_brand_primary_color', '#111111');
+    $secondary = get_option('printonet_brand_secondary_color', '#ffffff');
+    $font = get_option('printonet_brand_font_family', 'inherit');
+    ?>
+    <style>
+      :root {
+        --printonet-primary: <?php echo esc_html($primary); ?>;
+        --printonet-secondary: <?php echo esc_html($secondary); ?>;
+        --printonet-font-family: <?php echo esc_html($font); ?>;
+      }
+      body {
+        font-family: var(--printonet-font-family);
+      }
+    </style>
+    <?php
+});
+
+add_action('template_redirect', static function () {
+    if (!function_exists('is_page') || !is_page('suspended')) {
+        return;
+    }
+
+    if (!class_exists('Printonet_Tenant_Control') || !Printonet_Tenant_Control::is_suspended()) {
+        wp_safe_redirect(home_url('/'));
+        exit;
+    }
+
+    status_header(503);
+    nocache_headers();
+});
+
+/**
+ * Shared product query for homepage rails.
+ *
+ * @return array<int,WC_Product>
+ */
+function printonet_theme_get_products(int $limit = 6): array
+{
+    if (!function_exists('wc_get_products')) {
+        return [];
+    }
+
+    return wc_get_products([
+        'status' => 'publish',
+        'limit' => $limit,
+        'orderby' => 'date',
+        'order' => 'DESC',
+        'return' => 'objects',
+    ]);
+}
+
+function printonet_theme_placeholder_image(string $seed = 'print'): string
+{
+    return 'https://picsum.photos/seed/' . rawurlencode($seed) . '/1400/900';
+}
+
+
+add_action('wp', static function () {
+    if (!function_exists('is_shop')) {
+        return;
+    }
+
+    if (is_shop() || is_product_taxonomy()) {
+        remove_action('storefront_sidebar', 'storefront_get_sidebar', 10);
+    }
+});
+
+add_filter('body_class', static function (array $classes): array {
+    if (!function_exists('is_shop')) {
+        return $classes;
+    }
+
+    if (is_shop() || is_product_taxonomy()) {
+        $classes = array_values(array_diff($classes, ['right-sidebar', 'left-sidebar']));
+        if (!in_array('storefront-full-width-content', $classes, true)) {
+            $classes[] = 'storefront-full-width-content';
+        }
+    }
+
+    return $classes;
+});
+
+
+add_filter('loop_shop_columns', static function (int $columns): int {
+    unset($columns);
+    return 5;
+}, 20);
+
+add_filter('loop_shop_per_page', static function (int $per_page): int {
+    unset($per_page);
+    return 20;
+}, 20);
+
+
+function printonet_theme_banner_placeholder(string $slot): string
+{
+    $map = [
+        'hero' => 'hero.jpg',
+        'intro' => 'one.jpg',
+        'story' => 'two.jpg',
+    ];
+
+    $filename = $map[$slot] ?? 'hero.jpg';
+    return get_stylesheet_directory_uri() . '/assets/placeholders/' . $filename;
+}
+
+add_action('init', static function () {
+    remove_action('storefront_footer', 'storefront_footer_widgets', 10);
+    remove_action('storefront_footer', 'storefront_credit', 20);
+    add_action('storefront_footer', 'printonet_theme_render_footer', 10);
+});
+
+function printonet_theme_render_footer(): void
+{
+    ?>
+    <div class="printonet-footer">
+      <div class="col-full">
+        <div class="printonet-footer__rows">
+          <div class="printonet-footer__row">
+            <h3><?php echo esc_html__('Shop', 'printonet-theme'); ?></h3>
+            <a href="<?php echo esc_url(home_url('/shop')); ?>"><?php echo esc_html__('All products', 'printonet-theme'); ?></a>
+            <a href="<?php echo esc_url(home_url('/shop')); ?>"><?php echo esc_html__('New arrivals', 'printonet-theme'); ?></a>
+          </div>
+          <div class="printonet-footer__row">
+            <h3><?php echo esc_html__('Support', 'printonet-theme'); ?></h3>
+            <a href="<?php echo esc_url(home_url('/contact')); ?>"><?php echo esc_html__('Contact us', 'printonet-theme'); ?></a>
+            <a href="<?php echo esc_url(home_url('/my-account')); ?>"><?php echo esc_html__('Account', 'printonet-theme'); ?></a>
+          </div>
+          <div class="printonet-footer__row">
+            <h3><?php echo esc_html__('Company', 'printonet-theme'); ?></h3>
+            <a href="<?php echo esc_url(home_url('/about')); ?>"><?php echo esc_html__('About', 'printonet-theme'); ?></a>
+            <a href="<?php echo esc_url(home_url('/blog')); ?>"><?php echo esc_html__('Journal', 'printonet-theme'); ?></a>
+          </div>
+          <div class="printonet-footer__row">
+            <h3><?php echo esc_html__('Legal', 'printonet-theme'); ?></h3>
+            <a href="<?php echo esc_url(home_url('/privacy-policy')); ?>"><?php echo esc_html__('Privacy policy', 'printonet-theme'); ?></a>
+            <a href="<?php echo esc_url(home_url('/terms')); ?>"><?php echo esc_html__('Terms', 'printonet-theme'); ?></a>
+          </div>
+        </div>
+      </div>
+    </div>
+    <?php
+}

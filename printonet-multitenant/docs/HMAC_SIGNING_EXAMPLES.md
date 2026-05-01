@@ -1,0 +1,102 @@
+# Printonet HMAC Signing Examples
+
+Use these examples from your main Printonet platform when calling:
+
+- `POST /wp-json/printonet/v1/provision-store`
+- `POST /wp-json/printonet/v1/delete-store`
+- `POST /wp-json/printonet/v1/tenant/config` (include `tenant_slug` in the JSON body when posting to the network base URL)
+- `POST /wp-json/printonet/v1/suppliers/sync`
+- `POST /wp-json/printonet/v1/suppliers/validate`
+- `GET /wp-json/printonet/v1/suppliers/sync-status/{job_id}` (optional signing if body empty)
+
+The tenant engine expects:
+
+- `X-Printonet-Timestamp: <unix_epoch_seconds>`
+- `X-Printonet-Signature: <hex_hmac_sha256(timestamp + "." + raw_body, PLATFORM_HMAC_SECRET)>`
+
+## Node.js (Express / generic service)
+
+```js
+import crypto from "node:crypto";
+import fetch from "node-fetch";
+
+const TENANT_BASE_URL = process.env.TENANT_BASE_URL; // e.g. https://stores.printonet.com
+const PLATFORM_HMAC_SECRET = process.env.PLATFORM_HMAC_SECRET;
+
+function signRequest(rawBody, timestamp, secret) {
+  return crypto
+    .createHmac("sha256", secret)
+    .update(`${timestamp}.${rawBody}`)
+    .digest("hex");
+}
+
+export async function callProvisionStore(payload) {
+  const rawBody = JSON.stringify(payload);
+  const timestamp = Math.floor(Date.now() / 1000).toString();
+  const signature = signRequest(rawBody, timestamp, PLATFORM_HMAC_SECRET);
+
+  const response = await fetch(
+    `${TENANT_BASE_URL}/wp-json/printonet/v1/provision-store`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Printonet-Timestamp": timestamp,
+        "X-Printonet-Signature": signature,
+      },
+      body: rawBody,
+    }
+  );
+
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(`Provision failed (${response.status}): ${text}`);
+  }
+
+  return response.json();
+}
+```
+
+## Laravel (PHP)
+
+```php
+<?php
+
+use Illuminate\Support\Facades\Http;
+
+function printonetSignedPost(string $url, array $payload): array
+{
+    $secret = config('services.printonet.platform_hmac_secret');
+    $timestamp = (string) time();
+    $rawBody = json_encode($payload, JSON_UNESCAPED_SLASHES);
+    $signature = hash_hmac('sha256', $timestamp . '.' . $rawBody, $secret);
+
+    $response = Http::withHeaders([
+        'X-Printonet-Timestamp' => $timestamp,
+        'X-Printonet-Signature' => $signature,
+        'Content-Type' => 'application/json',
+    ])->withBody($rawBody, 'application/json')->post($url);
+
+    if (!$response->successful()) {
+        throw new RuntimeException('Printonet call failed: ' . $response->status() . ' ' . $response->body());
+    }
+
+    return $response->json();
+}
+
+// Example usage:
+// $result = printonetSignedPost(
+//   'https://stores.printonet.com/wp-json/printonet/v1/provision-store',
+//   [
+//     'tenant_slug' => 'acme-print',
+//     'store_name' => 'Acme Print',
+//     'admin_email' => 'owner@acmeprint.com',
+//   ]
+// );
+```
+
+## Critical rules
+
+- Sign the exact raw JSON string sent over the wire.
+- Timestamp must be current (server allows ~5 minutes skew).
+- Keep `PLATFORM_HMAC_SECRET` only on trusted server-side code.

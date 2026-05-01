@@ -1,0 +1,191 @@
+<?php
+
+if (!defined('ABSPATH')) {
+    exit;
+}
+
+/**
+ * Maps Printonet dashboard colors and asset URLs into WordPress options + Storefront theme mods
+ * so logo, favicon, and accent colors actually render on the storefront.
+ */
+class Printonet_Branding
+{
+    /** @var int Used during provision-store so sideload runs as the new tenant admin. */
+    private static $provision_actor_id = 0;
+
+    /**
+     * Apply branding keys when present. Safe for partial updates (config sync).
+     *
+     * @param array $input Keys: primary_color, secondary_color, logo_url, favicon_url (all optional)
+     */
+    public static function apply(array $input): void
+    {
+        if (!empty($input['primary_color'])) {
+            $primary = self::sanitize_color((string) $input['primary_color'], '#111111');
+            update_option('printonet_brand_primary_color', $primary);
+            self::apply_primary_to_storefront($primary);
+        }
+
+        if (!empty($input['secondary_color'])) {
+            $secondary = self::sanitize_color((string) $input['secondary_color'], '#ffffff');
+            update_option('printonet_brand_secondary_color', $secondary);
+            set_theme_mod('storefront_header_background_color', $secondary);
+            set_theme_mod('storefront_footer_background_color', self::soften_background($secondary));
+        }
+
+        if (!empty($input['logo_url'])) {
+            $url = esc_url_raw((string) $input['logo_url']);
+            update_option('printonet_logo_url', $url);
+            $id = self::sideload_image_to_media($url, 'Store logo');
+            if ($id > 0) {
+                set_theme_mod('custom_logo', $id);
+            }
+        }
+
+        if (!empty($input['favicon_url'])) {
+            $url = esc_url_raw((string) $input['favicon_url']);
+            update_option('printonet_favicon_url', $url);
+            $id = self::sideload_image_to_media($url, 'Site icon');
+            if ($id > 0) {
+                update_option('site_icon', $id);
+            }
+        }
+    }
+
+    /**
+     * Used during provisioning when blog context is already switched and the storefront theme is active.
+     *
+     * @param int $tenant_admin_user_id User ID returned from provisioning (must exist on the new blog).
+     */
+    public static function provision_defaults(array $payload, int $tenant_admin_user_id): void
+    {
+        self::$provision_actor_id = $tenant_admin_user_id;
+        try {
+            self::apply([
+                'primary_color' => $payload['primary_color'] ?? '',
+                'secondary_color' => $payload['secondary_color'] ?? '',
+                'logo_url' => $payload['logo_url'] ?? '',
+                'favicon_url' => $payload['favicon_url'] ?? '',
+            ]);
+        } finally {
+            self::$provision_actor_id = 0;
+        }
+    }
+
+    private static function apply_primary_to_storefront(string $primary): void
+    {
+        set_theme_mod('storefront_accent_color', $primary);
+        set_theme_mod('storefront_header_link_color', $primary);
+        set_theme_mod('storefront_button_alt_background_color', $primary);
+        set_theme_mod('storefront_button_alt_text_color', '#ffffff');
+    }
+
+    private static function soften_background(string $hex): string
+    {
+        $hex = ltrim($hex, '#');
+        if (strlen($hex) !== 6 || !ctype_xdigit($hex)) {
+            return '#f0f0f0';
+        }
+        $r = hexdec(substr($hex, 0, 2));
+        $g = hexdec(substr($hex, 2, 2));
+        $b = hexdec(substr($hex, 4, 2));
+        $mix = static function (int $c): int {
+            return (int) round($c * 0.92 + 255 * 0.08);
+        };
+
+        return sprintf(
+            '#%02x%02x%02x',
+            $mix($r),
+            $mix($g),
+            $mix($b)
+        );
+    }
+
+    private static function sanitize_color(string $input, string $fallback): string
+    {
+        $input = trim($input);
+        if ($input === '') {
+            return $fallback;
+        }
+
+        if ($input[0] !== '#') {
+            $input = '#' . $input;
+        }
+
+        $hex = sanitize_hex_color($input);
+
+        return $hex ?: $fallback;
+    }
+
+    /**
+     * @return int Attachment ID or 0
+     */
+    private static function sideload_image_to_media(string $url, string $title): int
+    {
+        if ($url === '' || !wp_http_validate_url($url)) {
+            return 0;
+        }
+
+        require_once ABSPATH . 'wp-admin/includes/file.php';
+        require_once ABSPATH . 'wp-admin/includes/media.php';
+        require_once ABSPATH . 'wp-admin/includes/image.php';
+
+        $prev_user = get_current_user_id();
+        $admin_id = self::first_blog_administrator_id();
+        if ($admin_id > 0) {
+            wp_set_current_user($admin_id);
+        }
+
+        try {
+            $tmp = download_url($url);
+            if (is_wp_error($tmp)) {
+                return 0;
+            }
+
+            $path = wp_parse_url($url, PHP_URL_PATH);
+            $basename = $path ? sanitize_file_name(basename((string) $path)) : 'image.png';
+            if ($basename === '' || $basename === '.') {
+                $basename = 'image.png';
+            }
+
+            $file_array = [
+                'name' => $basename,
+                'tmp_name' => $tmp,
+            ];
+
+            $id = media_handle_sideload($file_array, 0, $title);
+
+            if (is_wp_error($id)) {
+                @unlink($tmp);
+
+                return 0;
+            }
+
+            return (int) $id;
+        } finally {
+            wp_set_current_user($prev_user);
+        }
+    }
+
+    private static function first_blog_administrator_id(): int
+    {
+        if (self::$provision_actor_id > 0) {
+            return self::$provision_actor_id;
+        }
+
+        $admins = get_users([
+            'blog_id' => get_current_blog_id(),
+            'role' => 'administrator',
+            'number' => 1,
+            'orderby' => 'ID',
+            'order' => 'ASC',
+            'fields' => 'ID',
+        ]);
+
+        if (!empty($admins[0])) {
+            return (int) $admins[0];
+        }
+
+        return 0;
+    }
+}

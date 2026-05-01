@@ -1,0 +1,17 @@
+APP_DOMAIN=stores.printonet.local
+WP_PATH=/var/www/printonet
+WP_URL=https://stores.printonet.local
+LETSENCRYPT_EMAIL=admin@printonet.local
+DB_NAME=printonet_wp
+DB_USER=printonet_user
+DB_PASSWORD=replace-me
+DB_ROOT_PASSWORD=replace-me-root
+WP_ADMIN_USER=admin
+WP_ADMIN_PASSWORD=replace-me-admin
+WP_ADMIN_EMAIL=admin@printonet.local
+PROVISIONING_API_KEY=replace-with-long-random-secret
+PLATFORM_HMAC_SECRET=replace-with-main-platform-signing-secret
+ALLOW_LEGACY_API_KEY=false
+SUPPLIER_WEBHOOK_SECRET=replace-with-second-long-random-secret
+INTERNAL_SUPPLIER_API_URL=https://qumrnazgdrijdcihtkah.supabase.co/functions/v1/tenant-catalog-feed
+INTERNAL_SUPPLIER_TENANT_SLUG=stores.printonet.com
