@@ -108,3 +108,8 @@
 2026-05-01 03:14:02.728 [error] Error getting submodules: A system error occurred (ENOENT: no such file or directory, open '/root/.gitmodules')
 2026-05-01 03:14:13.492 [warning] Failed to get symbolic ref: Failed to execute git
 2026-05-01 03:14:13.542 [warning] Failed to get default branch from git config: Failed to execute git
+2026-05-01 03:14:57.161 [error] Error getting submodules: A system error occurred (ENOENT: no such file or directory, open '/root/.gitmodules')
+2026-05-01 03:15:03.088 [warning] Failed to get symbolic ref: Failed to execute git
+2026-05-01 03:15:03.146 [warning] Failed to get default branch from git config: Failed to execute git
+2026-05-01 03:15:08.016 [warning] Failed to get symbolic ref: Failed to execute git
+2026-05-01 03:15:08.070 [warning] Failed to get default branch from git config: Failed to execute git

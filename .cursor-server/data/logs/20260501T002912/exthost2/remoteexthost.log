@@ -77,3 +77,6 @@
 2026-05-01 03:14:03.734 [error] Error: command '_chat.editSessions.accept' not found
     at bem._tryExecuteCommand (vscode-file://vscode-app/Applications/Cursor.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:41602:3448)
     at bem.executeCommandImpl (vscode-file://vscode-app/Applications/Cursor.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:41602:2950)
+2026-05-01 03:14:57.824 [error] Error: command '_chat.editSessions.accept' not found
+    at bem._tryExecuteCommand (vscode-file://vscode-app/Applications/Cursor.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:41602:3448)
+    at bem.executeCommandImpl (vscode-file://vscode-app/Applications/Cursor.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:41602:2950)
