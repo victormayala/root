@@ -119,3 +119,5 @@
 2026-05-01 03:16:10.517 [info] Aborting indexing job.
 2026-05-01 03:16:10.518 [error] We currently do not allow indexing the home directory.
 2026-05-01 03:16:10.518 [info] Indexing job successfully done or aborted.
+2026-05-01 03:18:13.954 [warning] Failed to get symbolic ref: Failed to execute git
+2026-05-01 03:18:14.010 [warning] Failed to get default branch from git config: Failed to execute git
