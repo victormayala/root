@@ -9,3 +9,11 @@
 2026-05-01 00:29:19.570 [info] fetchAndWrite: lease returned 26 tools across 1 clients
 2026-05-01 00:29:19.972 [info] fetchAndWrite: lease returned 26 tools across 1 clients
 2026-05-01 00:29:20.188 [info] fetchAndWrite: lease returned 26 tools across 1 clients
+2026-05-01 00:48:03.053 [info] Lease change event received {"reason":"cursor_mcp_lease_settings"}
+2026-05-01 00:48:03.268 [info] fetchAndWrite: lease returned 26 tools across 1 clients
+2026-05-01 00:48:08.628 [info] Lease change event received {"reason":"cursor_mcp_lease_settings"}
+2026-05-01 00:48:08.798 [info] Lease change event received {"reason":"cursor_mcp_lease_settings"}
+2026-05-01 00:48:08.893 [info] fetchAndWrite: lease returned 26 tools across 1 clients
+2026-05-01 00:48:09.078 [info] fetchAndWrite: lease returned 26 tools across 1 clients
+2026-05-01 00:51:27.752 [info] Lease change event received {"reason":"cursor_mcp_lease_settings"}
+2026-05-01 00:51:27.920 [info] fetchAndWrite: lease returned 26 tools across 1 clients

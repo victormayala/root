@@ -3,7 +3,7 @@ Theme Name: Printonet Theme
 Theme URI: https://printonet.example
 Author: Printonet
 Description: Pets-inspired editorial WooCommerce storefront for Printonet stores.
-Version: 0.1.0
+Version: 0.1.1
 Template: storefront
 Text Domain: printonet-theme
 */
@@ -200,6 +200,75 @@ body {
 
 .site-main {
   margin-top: 0;
+}
+
+/*
+ * Product listing (shop + category/tag/attribute archives): remove title chrome and
+ * tighten spacing left by Storefront full-width .woocommerce-products-header rules.
+ */
+.post-type-archive-product .woocommerce-products-header,
+.tax-product_cat .woocommerce-products-header,
+.tax-product_tag .woocommerce-products-header,
+body[class*="tax-pa_"] .woocommerce-products-header {
+  padding: 0;
+  margin: 0;
+  text-align: inherit;
+}
+
+/* Hide PLP title if another plugin/theme still outputs WooCommerce heading markup */
+.post-type-archive-product .woocommerce-products-header__title.page-title,
+.tax-product_cat .woocommerce-products-header__title.page-title,
+.tax-product_tag .woocommerce-products-header__title.page-title,
+body[class*="tax-pa_"] .woocommerce-products-header__title.page-title,
+body.woocommerce-shop .woocommerce-products-header__title.page-title {
+  display: none !important;
+}
+
+body.woocommerce-shop:not(.single-product) .site-main .page-header .page-title {
+  display: none !important;
+}
+
+/* WooCommerce blockified archive-product.html — core/query-title ("Shop") */
+.post-type-archive-product .wp-block-query-title,
+.tax-product_cat .wp-block-query-title,
+.tax-product_tag .wp-block-query-title,
+body[class*="tax-pa_"] .wp-block-query-title,
+body.woocommerce-shop .wp-block-query-title {
+  display: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.post-type-archive-product .storefront-breadcrumb,
+.tax-product_cat .storefront-breadcrumb,
+.tax-product_tag .storefront-breadcrumb,
+body[class*="tax-pa_"] .storefront-breadcrumb,
+body.woocommerce-shop .storefront-breadcrumb,
+/* Blockified catalog: woocommerce/breadcrumbs */
+.post-type-archive-product .wc-block-breadcrumbs,
+.tax-product_cat .wc-block-breadcrumbs,
+.tax-product_tag .wc-block-breadcrumbs,
+body[class*="tax-pa_"] .wc-block-breadcrumbs,
+body.woocommerce-shop .wc-block-breadcrumbs,
+.post-type-archive-product nav.woocommerce-breadcrumb,
+.tax-product_cat nav.woocommerce-breadcrumb,
+.tax-product_tag nav.woocommerce-breadcrumb,
+body[class*="tax-pa_"] nav.woocommerce-breadcrumb,
+body.woocommerce-shop nav.woocommerce-breadcrumb {
+  display: none !important;
+}
+
+/*
+ * Hide entire archive header if PHP/plugins still emit it (classic templates).
+ */
+.post-type-archive-product .woocommerce-products-header,
+.tax-product_cat .woocommerce-products-header,
+.tax-product_tag .woocommerce-products-header,
+body[class*="tax-pa_"] .woocommerce-products-header,
+body.woocommerce-shop .woocommerce-products-header,
+/* Storefront + WC classic: direct child of main#main (matches live markup when body classes differ). */
+main#main.site-main > header.woocommerce-products-header {
+  display: none !important;
 }
 
 .col-full,

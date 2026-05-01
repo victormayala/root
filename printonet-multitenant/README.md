@@ -8,7 +8,7 @@ Bootstrap for a centralized WordPress Multisite + WooCommerce tenant engine on a
 - WordPress Multisite install script (subdomain mode)
 - Shared MU plugin scaffold (`printonet-core`) with tenant provisioning API
 - Supplier sync queue endpoint with first-party internal supplier adapter
-- WooCommerce **Storefront** parent theme (from WordPress.org) plus **printonet-theme** (Theme 1) and **printonet-storefront** child themes: installed and network-enabled. `printonet-theme` is activated on the main site by `install_wp_multisite.sh`
+- WooCommerce **Storefront** parent theme (from WordPress.org) plus **printonet-theme** child: installed and network-enabled. `printonet-theme` is activated on the main site by `install_wp_multisite.sh`
 - Environment template for secure configuration
 
 ## Directory layout
@@ -17,8 +17,7 @@ Bootstrap for a centralized WordPress Multisite + WooCommerce tenant engine on a
 - `config/` - Nginx/PHP snippets
 - `assets/favicon.ico` - source favicon copied into the MU plugin bundle on install; default site icon for every new provision unless `provision-store` sends **`favicon_url`**
 - `wp-content/mu-plugins/printonet-core/` - shared business logic (all tenants)
-- `wp-content/themes/printonet-theme/` - Theme 1 (editorial flagship storefront)
-- `wp-content/themes/printonet-storefront/` - legacy shared storefront theme
+- `wp-content/themes/printonet-theme/` - Storefront child (editorial flagship storefront)
 - `docs/` - API contracts and implementation notes
 
 ## Quick start

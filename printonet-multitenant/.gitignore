@@ -1,0 +1,20 @@
+# Secrets and local env
+.env
+.env.local
+*.pem
+
+# Debug / scraped HTML in repo root only (local only)
+/*.html
+
+# Large reference theme bundle (not required for platform bootstrap)
+assets/prototype theme/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# WordPress runtime (if ever copied into tree)
+wp-config.php
+**/uploads/

@@ -1,0 +1,110 @@
+2026-05-01 01:05:16.441 [info] Using existing keys for an index
+2026-05-01 01:05:16.441 [info] InternalRepoInfo constructor with preferredEmbeddingModel 0
+2026-05-01 01:05:16.448 [info] Creating Indexing Repo client:  https://repo42.cursor.sh
+2026-05-01 01:05:16.448 [info] Creating repo client with backend url: https://repo42.cursor.sh
+2026-05-01 01:05:16.448 [info] Using existing keys for an index
+2026-05-01 01:05:16.448 [info] InternalRepoInfo constructor with preferredEmbeddingModel 0
+2026-05-01 01:05:16.512 [info] Starting RepoIndexWatcher for repo: 676b0577-0826-4401-8808-f850570ccfba, owner: auth0|user_01JAG6C5XV7SSTMK7BY2KF5EXP
+2026-05-01 01:05:16.512 [error] We currently do not allow indexing the home directory.
+2026-05-01 01:05:16.512 [info] Indexing job successfully done or aborted.
+2026-05-01 01:05:16.642 [warning] Failed to get symbolic ref: Failed to execute git
+2026-05-01 01:05:16.642 [warning] Failed to get symbolic ref: Failed to execute git
+2026-05-01 01:05:16.773 [warning] Failed to get default branch from git config: Failed to execute git
+2026-05-01 01:05:16.774 [warning] Failed to get default branch from git config: Failed to execute git
+2026-05-01 01:05:37.493 [warning] Failed to get symbolic ref: Failed to execute git
+2026-05-01 01:05:37.562 [warning] Failed to get default branch from git config: Failed to execute git
+2026-05-01 01:05:44.155 [warning] Failed to get symbolic ref: Failed to execute git
+2026-05-01 01:05:44.264 [warning] Failed to get default branch from git config: Failed to execute git
+2026-05-01 01:05:47.475 [error] Error executing git: fatal: no such branch: 'main'
+, cwd: /root, command: "git rev-list @{u}..HEAD --count"
+2026-05-01 01:05:48.684 [error] Error executing git: fatal: no such branch: 'main'
+, cwd: /root, command: "git rev-list @{u}..HEAD --count"
+2026-05-01 01:11:27.209 [warning] Failed to get symbolic ref: Failed to execute git
+2026-05-01 01:11:27.265 [warning] Failed to get default branch from git config: Failed to execute git
+2026-05-01 01:12:58.513 [info] multiCodebaseIndexingJob dispose
+2026-05-01 01:12:58.513 [info] Aborting indexing job.
+2026-05-01 01:12:58.513 [error] We currently do not allow indexing the home directory.
+2026-05-01 01:12:58.513 [info] Indexing job successfully done or aborted.
+2026-05-01 01:14:53.108 [warning] Failed to get symbolic ref: Failed to execute git
+2026-05-01 01:14:53.216 [warning] Failed to get default branch from git config: Failed to execute git
+2026-05-01 01:20:40.515 [info] multiCodebaseIndexingJob dispose
+2026-05-01 01:20:40.515 [info] Aborting indexing job.
+2026-05-01 01:20:40.515 [error] We currently do not allow indexing the home directory.
+2026-05-01 01:20:40.515 [info] Indexing job successfully done or aborted.
+2026-05-01 01:28:22.514 [info] multiCodebaseIndexingJob dispose
+2026-05-01 01:28:22.515 [info] Aborting indexing job.
+2026-05-01 01:28:22.515 [error] We currently do not allow indexing the home directory.
+2026-05-01 01:28:22.515 [info] Indexing job successfully done or aborted.
+2026-05-01 01:32:51.718 [warning] Failed to get symbolic ref: Failed to execute git
+2026-05-01 01:32:51.848 [warning] Failed to get default branch from git config: Failed to execute git
+2026-05-01 01:32:55.277 [error] Error executing git: fatal: no such branch: 'main'
+, cwd: /root, command: "git rev-list @{u}..HEAD --count"
+2026-05-01 01:32:56.318 [error] Error executing git: fatal: no such branch: 'main'
+, cwd: /root, command: "git rev-list @{u}..HEAD --count"
+2026-05-01 01:33:33.630 [warning] Failed to get symbolic ref: Failed to execute git
+2026-05-01 01:33:33.695 [warning] Failed to get default branch from git config: Failed to execute git
+2026-05-01 01:33:35.243 [error] Error executing git: fatal: no such branch: 'main'
+, cwd: /root, command: "git rev-list @{u}..HEAD --count"
+2026-05-01 01:33:35.839 [error] Error executing git: fatal: no such branch: 'main'
+, cwd: /root, command: "git rev-list @{u}..HEAD --count"
+2026-05-01 01:36:04.515 [info] multiCodebaseIndexingJob dispose
+2026-05-01 01:36:04.515 [info] Aborting indexing job.
+2026-05-01 01:36:04.515 [error] We currently do not allow indexing the home directory.
+2026-05-01 01:36:04.515 [info] Indexing job successfully done or aborted.
+2026-05-01 01:43:46.516 [info] multiCodebaseIndexingJob dispose
+2026-05-01 01:43:46.516 [info] Aborting indexing job.
+2026-05-01 01:43:46.516 [error] We currently do not allow indexing the home directory.
+2026-05-01 01:43:46.516 [info] Indexing job successfully done or aborted.
+2026-05-01 01:51:28.516 [info] multiCodebaseIndexingJob dispose
+2026-05-01 01:51:28.516 [info] Aborting indexing job.
+2026-05-01 01:51:28.516 [error] We currently do not allow indexing the home directory.
+2026-05-01 01:51:28.516 [info] Indexing job successfully done or aborted.
+2026-05-01 01:59:10.516 [info] multiCodebaseIndexingJob dispose
+2026-05-01 01:59:10.516 [info] Aborting indexing job.
+2026-05-01 01:59:10.516 [error] We currently do not allow indexing the home directory.
+2026-05-01 01:59:10.516 [info] Indexing job successfully done or aborted.
+2026-05-01 02:06:52.515 [info] multiCodebaseIndexingJob dispose
+2026-05-01 02:06:52.515 [info] Aborting indexing job.
+2026-05-01 02:06:52.516 [error] We currently do not allow indexing the home directory.
+2026-05-01 02:06:52.516 [info] Indexing job successfully done or aborted.
+2026-05-01 02:14:34.516 [info] multiCodebaseIndexingJob dispose
+2026-05-01 02:14:34.517 [info] Aborting indexing job.
+2026-05-01 02:14:34.517 [error] We currently do not allow indexing the home directory.
+2026-05-01 02:14:34.517 [info] Indexing job successfully done or aborted.
+2026-05-01 02:17:52.063 [warning] Failed to get symbolic ref: Failed to execute git
+2026-05-01 02:17:52.164 [warning] Failed to get default branch from git config: Failed to execute git
+2026-05-01 02:17:52.343 [warning] Failed to get symbolic ref: Failed to execute git
+2026-05-01 02:17:52.451 [warning] Failed to get default branch from git config: Failed to execute git
+2026-05-01 02:22:16.516 [info] multiCodebaseIndexingJob dispose
+2026-05-01 02:22:16.516 [info] Aborting indexing job.
+2026-05-01 02:22:16.516 [error] We currently do not allow indexing the home directory.
+2026-05-01 02:22:16.516 [info] Indexing job successfully done or aborted.
+2026-05-01 02:29:58.517 [info] multiCodebaseIndexingJob dispose
+2026-05-01 02:29:58.517 [info] Aborting indexing job.
+2026-05-01 02:29:58.517 [error] We currently do not allow indexing the home directory.
+2026-05-01 02:29:58.517 [info] Indexing job successfully done or aborted.
+2026-05-01 02:37:40.517 [info] multiCodebaseIndexingJob dispose
+2026-05-01 02:37:40.517 [info] Aborting indexing job.
+2026-05-01 02:37:40.517 [error] We currently do not allow indexing the home directory.
+2026-05-01 02:37:40.517 [info] Indexing job successfully done or aborted.
+2026-05-01 02:45:22.518 [info] multiCodebaseIndexingJob dispose
+2026-05-01 02:45:22.518 [info] Aborting indexing job.
+2026-05-01 02:45:22.518 [error] We currently do not allow indexing the home directory.
+2026-05-01 02:45:22.518 [info] Indexing job successfully done or aborted.
+2026-05-01 02:53:04.517 [info] multiCodebaseIndexingJob dispose
+2026-05-01 02:53:04.517 [info] Aborting indexing job.
+2026-05-01 02:53:04.517 [error] We currently do not allow indexing the home directory.
+2026-05-01 02:53:04.517 [info] Indexing job successfully done or aborted.
+2026-05-01 03:00:46.517 [info] multiCodebaseIndexingJob dispose
+2026-05-01 03:00:46.517 [info] Aborting indexing job.
+2026-05-01 03:00:46.517 [error] We currently do not allow indexing the home directory.
+2026-05-01 03:00:46.517 [info] Indexing job successfully done or aborted.
+2026-05-01 03:08:28.517 [info] multiCodebaseIndexingJob dispose
+2026-05-01 03:08:28.517 [info] Aborting indexing job.
+2026-05-01 03:08:28.517 [error] We currently do not allow indexing the home directory.
+2026-05-01 03:08:28.517 [info] Indexing job successfully done or aborted.
+2026-05-01 03:12:29.509 [warning] Failed to get symbolic ref: Failed to execute git
+2026-05-01 03:12:29.569 [warning] Failed to get default branch from git config: Failed to execute git
+2026-05-01 03:14:02.728 [error] Error getting submodules: A system error occurred (ENOENT: no such file or directory, open '/root/.gitmodules')
+2026-05-01 03:14:13.492 [warning] Failed to get symbolic ref: Failed to execute git
+2026-05-01 03:14:13.542 [warning] Failed to get default branch from git config: Failed to execute git

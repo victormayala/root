@@ -1,0 +1,452 @@
+<?php
+
+if (!defined('ABSPATH')) {
+    exit;
+}
+
+add_action('after_setup_theme', static function () {
+    add_theme_support('title-tag');
+    add_theme_support('post-thumbnails');
+});
+
+add_action('after_switch_theme', static function (): void {
+    if (function_exists('wc_clear_template_cache')) {
+        wc_clear_template_cache();
+    }
+});
+
+/**
+ * Bump WooCommerce template path cache when child overrides change — works without wp-admin / WP‑CLI.
+ *
+ * Any deploy that updates mtimes here triggers {@see wc_clear_template_cache()} on the next PHP request.
+ * (Full-page / CDN caches are separate — those only refresh when they expire or the provider purges.)
+ */
+function printonet_theme_wc_template_override_fingerprint(): string
+{
+    $dir = get_stylesheet_directory();
+    $files = [
+        $dir . '/functions.php',
+        $dir . '/style.css',
+        $dir . '/woocommerce/loop/header.php',
+        $dir . '/woocommerce/global/breadcrumb.php',
+    ];
+    $parts = [];
+    foreach ($files as $path) {
+        $parts[] = $path . ':' . (file_exists($path) ? (string) filemtime($path) : '0');
+    }
+
+    return md5(implode('|', $parts));
+}
+
+add_action('wp_loaded', static function (): void {
+    if (!function_exists('wc_clear_template_cache')) {
+        return;
+    }
+
+    $fp = printonet_theme_wc_template_override_fingerprint();
+    $opt = 'printonet_theme_wc_tpl_fp';
+    $prev = get_option($opt, '');
+
+    if ($prev !== $fp) {
+        wc_clear_template_cache();
+        update_option($opt, $fp, false);
+    }
+}, 30);
+
+add_action('init', static function () {
+    if (!function_exists('storefront_site_branding')) {
+        return;
+    }
+
+    remove_action('storefront_header', 'storefront_header_container', 0);
+    remove_action('storefront_header', 'storefront_skip_links', 5);
+    remove_action('storefront_header', 'storefront_site_branding', 20);
+    remove_action('storefront_header', 'storefront_secondary_navigation', 30);
+    remove_action('storefront_header', 'storefront_product_search', 40);
+    remove_action('storefront_header', 'storefront_header_container_close', 41);
+    remove_action('storefront_header', 'storefront_primary_navigation_wrapper', 42);
+    remove_action('storefront_header', 'storefront_primary_navigation', 50);
+    remove_action('storefront_header', 'storefront_header_cart', 60);
+    remove_action('storefront_header', 'storefront_primary_navigation_wrapper_close', 68);
+
+    add_action('storefront_header', 'printonet_theme_render_hook_header', 10);
+}, 20);
+
+function printonet_theme_render_hook_header(): void
+{
+    $account_url = function_exists('wc_get_page_permalink')
+        ? wc_get_page_permalink('myaccount')
+        : home_url('/my-account/');
+    ?>
+    <div class="printonet-hook-header">
+      <?php storefront_skip_links(); ?>
+
+      <div class="col-full printonet-hook-header__top">
+        <div class="printonet-hook-header__brand">
+          <?php storefront_site_branding(); ?>
+        </div>
+        <div class="printonet-hook-header__search">
+          <?php storefront_product_search(); ?>
+        </div>
+        <div class="printonet-hook-header__meta">
+          <?php if (function_exists('storefront_secondary_navigation')) : ?>
+            <div class="printonet-hook-header__secondary-nav">
+              <?php storefront_secondary_navigation(); ?>
+            </div>
+          <?php endif; ?>
+          <nav class="printonet-hook-header__auth" aria-label="<?php echo esc_attr__('Account', 'printonet-theme'); ?>">
+            <?php if (is_user_logged_in()) : ?>
+              <a href="<?php echo esc_url($account_url); ?>"><?php echo esc_html__('My account', 'printonet-theme'); ?></a>
+            <?php else : ?>
+              <a href="<?php echo esc_url($account_url); ?>"><?php echo esc_html__('Login', 'printonet-theme'); ?></a>
+              <span>/</span>
+              <a href="<?php echo esc_url($account_url); ?>"><?php echo esc_html__('Register', 'printonet-theme'); ?></a>
+            <?php endif; ?>
+          </nav>
+        </div>
+      </div>
+
+      <div class="storefront-primary-navigation printonet-hook-header__nav">
+        <div class="col-full">
+          <div class="printonet-hook-header__nav-main">
+            <?php storefront_primary_navigation(); ?>
+          </div>
+          <div class="printonet-hook-header__nav-actions">
+            <?php storefront_header_cart(); ?>
+          </div>
+        </div>
+      </div>
+    </div>
+    <?php
+}
+
+add_action('wp_enqueue_scripts', static function () {
+    $style_path = get_stylesheet_directory() . '/style.css';
+    $style_version = file_exists($style_path) ? (string) filemtime($style_path) : wp_get_theme()->get('Version');
+
+    wp_enqueue_style(
+        'printonet-theme-style',
+        get_stylesheet_uri(),
+        ['storefront-style'],
+        $style_version
+    );
+
+    $accent = get_option('printonet_brand_primary_color', '#111111');
+    $accent = $accent !== '' ? $accent : '#111111';
+
+    wp_add_inline_style(
+        'printonet-theme-style',
+        '.printonet-btn, .printonet-pill { border-color: ' . esc_html($accent) . '; }
+        .printonet-btn:hover { color: ' . esc_html($accent) . '; }
+        .printonet-card__title:hover { color: ' . esc_html($accent) . '; }
+        .wc-block-components-button:not(.is-link):not(.wc-block-cart__submit-button) { background-color: ' . esc_html($accent) . '; color: #fff; }'
+    );
+});
+
+add_action('wp_head', static function () {
+    $primary = get_option('printonet_brand_primary_color', '#111111');
+    $secondary = get_option('printonet_brand_secondary_color', '#ffffff');
+    $font = get_option('printonet_brand_font_family', 'inherit');
+    ?>
+    <style>
+      :root {
+        --printonet-primary: <?php echo esc_html($primary); ?>;
+        --printonet-secondary: <?php echo esc_html($secondary); ?>;
+        --printonet-font-family: <?php echo esc_html($font); ?>;
+      }
+      body {
+        font-family: var(--printonet-font-family);
+      }
+    </style>
+    <?php
+});
+
+add_action('template_redirect', static function () {
+    if (!function_exists('is_page') || !is_page('suspended')) {
+        return;
+    }
+
+    if (!class_exists('Printonet_Tenant_Control') || !Printonet_Tenant_Control::is_suspended()) {
+        wp_safe_redirect(home_url('/'));
+        exit;
+    }
+
+    status_header(503);
+    nocache_headers();
+});
+
+/**
+ * Shared product query for homepage rails.
+ *
+ * @return array<int,WC_Product>
+ */
+function printonet_theme_get_products(int $limit = 6): array
+{
+    if (!function_exists('wc_get_products')) {
+        return [];
+    }
+
+    return wc_get_products([
+        'status' => 'publish',
+        'limit' => $limit,
+        'orderby' => 'date',
+        'order' => 'DESC',
+        'return' => 'objects',
+    ]);
+}
+
+function printonet_theme_placeholder_image(string $seed = 'print'): string
+{
+    return 'https://picsum.photos/seed/' . rawurlencode($seed) . '/1400/900';
+}
+
+/**
+ * Shop page, product taxonomy archives, or product post-type archive (covers misconfigured shop permalinks).
+ */
+function printonet_theme_is_product_listing(): bool
+{
+    if (!function_exists('is_shop')) {
+        return false;
+    }
+
+    if (is_shop() || is_product_taxonomy() || is_post_type_archive('product')) {
+        return true;
+    }
+
+    $shop_id = function_exists('wc_get_page_id') ? (int) wc_get_page_id('shop') : 0;
+
+    return $shop_id > 0 && function_exists('is_page') && is_page($shop_id);
+}
+
+/**
+ * Block outputs to remove on product listing URLs.
+ *
+ * The Shop screen is often a Page in the Site Editor, so the visible H1 is frequently
+ * {@see core_post_title} — not {@see core_query_title} with type "archive".
+ */
+function printonet_theme_should_strip_plp_block(string $block_name, array $attrs): bool
+{
+    if ($block_name === 'woocommerce/breadcrumbs') {
+        return true;
+    }
+
+    if ($block_name === 'core/query-title') {
+        return true;
+    }
+
+    if ($block_name === 'core/post-title') {
+        $ns = $attrs['__woocommerceNamespace'] ?? '';
+        if ($ns !== '' && strpos($ns, 'woocommerce/product-collection/') === 0) {
+            return false;
+        }
+
+        return true;
+    }
+
+    return false;
+}
+
+/**
+ * Classic templates: strip sidebar + breadcrumb + default archive header once the main query is resolved.
+ * (template_redirect is more reliable than wp for is_shop() / taxonomy checks.)
+ */
+add_action('template_redirect', static function (): void {
+    if (!printonet_theme_is_product_listing()) {
+        return;
+    }
+
+    remove_action('storefront_sidebar', 'storefront_get_sidebar', 10);
+
+    foreach ([10, 20, 5] as $priority) {
+        remove_action('storefront_before_content', 'woocommerce_breadcrumb', $priority);
+        remove_action('woocommerce_before_main_content', 'woocommerce_breadcrumb', $priority);
+    }
+
+    /*
+     * Keep woocommerce_product_taxonomy_archive_header registered so wc_get_template('loop/header.php')
+     * loads our theme override (removing it bypassed the template entirely).
+     */
+}, 998);
+
+/**
+ * PLP: hide archive H1 if anything still prints it (edge cases / plugins).
+ */
+add_filter('woocommerce_show_page_title', static function ($show) {
+    if (printonet_theme_is_product_listing()) {
+        return false;
+    }
+
+    return $show;
+}, 999);
+
+/**
+ * Plain-text title from {@see woocommerce_page_title()} (classic templates, breadcrumbs, etc.).
+ */
+add_filter('woocommerce_page_title', static function ($title) {
+    if (printonet_theme_is_product_listing()) {
+        return '';
+    }
+
+    return $title;
+}, 999);
+
+/**
+ * Blockified Product Catalog (`templates/blockified/archive-product.html`) renders breadcrumbs and
+ * query-title as blocks — those never go through Storefront’s storefront_before_content hook or
+ * woocommerce_shop_loop_header.
+ */
+add_filter('pre_render_block', static function ($pre_render, array $parsed_block, $parent_block = null) {
+    if ($pre_render !== null) {
+        return $pre_render;
+    }
+
+    if (!printonet_theme_is_product_listing()) {
+        return null;
+    }
+
+    $name = $parsed_block['blockName'] ?? '';
+
+    if (!printonet_theme_should_strip_plp_block($name, $parsed_block['attrs'] ?? [])) {
+        return null;
+    }
+
+    return '';
+}, 999, 3);
+
+add_filter('render_block', static function ($block_content, array $block) {
+    if (!printonet_theme_is_product_listing()) {
+        return $block_content;
+    }
+
+    $name = $block['blockName'] ?? '';
+
+    if (!printonet_theme_should_strip_plp_block($name, $block['attrs'] ?? [])) {
+        return $block_content;
+    }
+
+    return '';
+}, 999, 2);
+
+/**
+ * Absolute fallback when caching / edge runs bypass PHP removals (visibility only).
+ */
+add_action('wp_head', static function (): void {
+    if (!printonet_theme_is_product_listing()) {
+        return;
+    }
+    ?>
+<style id="printonet-plp-hide-chrome">
+/* PLP: breadcrumb row + archive title chrome (Storefront wrapper, WC blocks, classic header). */
+#page .storefront-breadcrumb,
+#page .wc-block-breadcrumbs,
+.post-type-archive-product .woocommerce-products-header,
+.tax-product_cat .woocommerce-products-header,
+.tax-product_tag .woocommerce-products-header,
+body[class*="tax-pa_"] .woocommerce-products-header,
+body.woocommerce-shop .woocommerce-products-header,
+body.woocommerce-shop main .wp-block-query-title,
+.post-type-archive-product main .wp-block-query-title,
+.tax-product_cat main .wp-block-query-title,
+.tax-product_tag main .wp-block-query-title,
+body[class*="tax-pa_"] main .wp-block-query-title {
+  display: none !important;
+  visibility: hidden !important;
+  height: 0 !important;
+  min-height: 0 !important;
+  max-height: 0 !important;
+  overflow: hidden !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  clip: rect(0, 0, 0, 0) !important;
+  position: absolute !important;
+  width: 1px !important;
+}
+</style>
+    <?php
+}, 99999);
+
+add_filter('body_class', static function (array $classes): array {
+    if (printonet_theme_is_product_listing()) {
+        $classes = array_values(array_diff($classes, ['right-sidebar', 'left-sidebar']));
+        if (!in_array('storefront-full-width-content', $classes, true)) {
+            $classes[] = 'storefront-full-width-content';
+        }
+    }
+
+    return $classes;
+});
+
+
+add_filter('loop_shop_columns', static function (int $columns): int {
+    unset($columns);
+    return 5;
+}, 20);
+
+add_filter('loop_shop_per_page', static function (int $per_page): int {
+    unset($per_page);
+    return 20;
+}, 20);
+
+function printonet_theme_banner_placeholder(string $slot): string
+{
+    $map = [
+        'hero' => 'hero.jpg',
+        'intro' => 'one.jpg',
+        'story' => 'two.jpg',
+    ];
+
+    $filename = $map[$slot] ?? 'hero.jpg';
+    return get_stylesheet_directory_uri() . '/assets/placeholders/' . $filename;
+}
+
+add_action('init', static function () {
+    remove_action('storefront_footer', 'storefront_footer_widgets', 10);
+    remove_action('storefront_footer', 'storefront_credit', 20);
+    add_action('storefront_footer', 'printonet_theme_render_footer', 10);
+});
+
+function printonet_theme_render_footer(): void
+{
+    $store_name = get_bloginfo('name');
+    $current_year = gmdate('Y');
+    ?>
+    <div class="printonet-footer">
+      <div class="col-full">
+        <div class="printonet-footer__rows">
+          <div class="printonet-footer__row">
+            <h3><?php echo esc_html__('Shop', 'printonet-theme'); ?></h3>
+            <a href="<?php echo esc_url(home_url('/shop')); ?>"><?php echo esc_html__('All products', 'printonet-theme'); ?></a>
+            <a href="<?php echo esc_url(home_url('/shop')); ?>"><?php echo esc_html__('New arrivals', 'printonet-theme'); ?></a>
+          </div>
+          <div class="printonet-footer__row">
+            <h3><?php echo esc_html__('Support', 'printonet-theme'); ?></h3>
+            <a href="<?php echo esc_url(home_url('/contact')); ?>"><?php echo esc_html__('Contact us', 'printonet-theme'); ?></a>
+            <a href="<?php echo esc_url(home_url('/my-account')); ?>"><?php echo esc_html__('Account', 'printonet-theme'); ?></a>
+          </div>
+          <div class="printonet-footer__row">
+            <h3><?php echo esc_html__('Company', 'printonet-theme'); ?></h3>
+            <a href="<?php echo esc_url(home_url('/about')); ?>"><?php echo esc_html__('About', 'printonet-theme'); ?></a>
+            <a href="<?php echo esc_url(home_url('/blog')); ?>"><?php echo esc_html__('Journal', 'printonet-theme'); ?></a>
+          </div>
+          <div class="printonet-footer__row">
+            <h3><?php echo esc_html__('Legal', 'printonet-theme'); ?></h3>
+            <a href="<?php echo esc_url(home_url('/privacy-policy')); ?>"><?php echo esc_html__('Privacy policy', 'printonet-theme'); ?></a>
+            <a href="<?php echo esc_url(home_url('/terms')); ?>"><?php echo esc_html__('Terms', 'printonet-theme'); ?></a>
+          </div>
+        </div>
+        <div class="printonet-footer__bottom">
+          <?php
+          echo esc_html(
+              sprintf(
+                  '%s %s All Rights Reserved. Powered by Printonet.',
+                  $store_name,
+                  $current_year
+              )
+          );
+          ?>
+        </div>
+      </div>
+    </div>
+    <?php
+}

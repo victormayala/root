@@ -54,3 +54,16 @@
 2026-05-01 00:44:42.962 [info] Indexing job successfully done or aborted.
 2026-05-01 00:44:44.007 [error] Error executing git: fatal: no such branch: 'main'
 , cwd: /root, command: "git rev-list @{u}..HEAD --count"
+2026-05-01 00:45:18.710 [error] Error executing git: fatal: no such branch: 'main'
+, cwd: /root, command: "git rev-list @{u}..HEAD --count"
+2026-05-01 00:52:16.851 [error] Error fetching commits in batch: Failed to execute git
+2026-05-01 00:52:24.963 [info] multiCodebaseIndexingJob dispose
+2026-05-01 00:52:24.964 [info] Aborting indexing job.
+2026-05-01 00:52:24.964 [error] We currently do not allow indexing the home directory.
+2026-05-01 00:52:24.964 [info] Indexing job successfully done or aborted.
+2026-05-01 01:00:06.962 [info] multiCodebaseIndexingJob dispose
+2026-05-01 01:00:06.962 [info] Aborting indexing job.
+2026-05-01 01:00:06.962 [error] We currently do not allow indexing the home directory.
+2026-05-01 01:00:06.962 [info] Indexing job successfully done or aborted.
+2026-05-01 01:03:07.529 [info] multiCodebaseIndexingJob dispose
+2026-05-01 01:03:07.529 [info] Aborting indexing job.

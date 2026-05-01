@@ -1,0 +1,79 @@
+2026-05-01 01:05:08.723 [info] Extension host with pid 160750 started
+2026-05-01 01:05:08.723 [info] [ExtHostShellExec] Detecting sandbox support...
+2026-05-01 01:05:08.723 [info] [ExtHostShellExec] Platform: linux, Shell type: unknown
+2026-05-01 01:05:08.723 [info] [ExtHostShellExec] dirname: /root/.cursor-server/bin/linux-x64/3e548838cf824b70851dd3ef27d0c6aae371b3f0/out/vs/workbench/api/node
+2026-05-01 01:05:08.723 [info] [ExtHostShellExec] Sandbox helper path: /root/.cursor-server/bin/linux-x64/3e548838cf824b70851dd3ef27d0c6aae371b3f0/resources/helpers/cursorsandbox
+2026-05-01 01:05:08.723 [info] [ExtHostShellExec] process.resourcesPath: undefined
+2026-05-01 01:05:08.723 [info] [ExtHostShellExec] process.execPath: /root/.cursor-server/bin/linux-x64/3e548838cf824b70851dd3ef27d0c6aae371b3f0/node
+2026-05-01 01:05:08.723 [info] [ExtHostShellExec] ripgrep path for sandboxing: /root/.cursor-server/bin/linux-x64/3e548838cf824b70851dd3ef27d0c6aae371b3f0/resources/helpers/rg
+2026-05-01 01:05:08.723 [info] [shell-exec:sandbox] [isSandboxHelperSupported] Starting sandbox support check...
+2026-05-01 01:05:08.723 [info] [shell-exec:sandbox] [checkBinaryAvailable] Resolved binary path: /root/.cursor-server/bin/linux-x64/3e548838cf824b70851dd3ef27d0c6aae371b3f0/resources/helpers/cursorsandbox
+2026-05-01 01:05:08.723 [info] [shell-exec:sandbox] [checkBinaryAvailable] Binary path exists: true
+2026-05-01 01:05:08.723 [info] [shell-exec:sandbox] [isSandboxHelperSupported] Running preflight with binary: /root/.cursor-server/bin/linux-x64/3e548838cf824b70851dd3ef27d0c6aae371b3f0/resources/helpers/cursorsandbox
+2026-05-01 01:05:08.723 [info] [shell-exec:sandbox] [isSandboxHelperSupported] CWD: /root
+2026-05-01 01:05:08.724 [info] [shell-exec:sandbox] [isSandboxHelperSupported] Preflight succeeded, sandbox supported!
+2026-05-01 01:05:08.724 [info] [ExtHostShellExec] Sandbox support detected: true, platform: linux, kernelVersion: 6.8.0-107-generic
+2026-05-01 01:05:08.732 [info] Lock '/root/.cursor-server/data/User/workspaceStorage/a03d81c4e8b9eef4b115e1d369e97317/vscode.lock': Lock acquired.
+2026-05-01 01:05:08.948 [info] [ExtHostShellExec] Initializing terminal executor with userTerminalHint: undefined
+2026-05-01 01:05:08.970 [info] ExtensionService#_doActivateExtension vscode.tunnel-forwarding, startup: false, activationEvent: 'onTunnel'
+2026-05-01 01:05:08.971 [info] ExtensionService#_doActivateExtension vscode.emmet, startup: false, activationEvent: 'onLanguage'
+2026-05-01 01:05:08.971 [info] ExtensionService#_doActivateExtension vscode.php-language-features, startup: false, activationEvent: 'onLanguage:php'
+2026-05-01 01:05:08.971 [info] ExtensionService#_doActivateExtension vscode.extension-editing, startup: false, activationEvent: 'onLanguage:markdown'
+2026-05-01 01:05:08.971 [info] ExtensionService#_doActivateExtension vscode.markdown-language-features, startup: false, activationEvent: 'onLanguage:markdown'
+2026-05-01 01:05:08.971 [info] ExtensionService#_doActivateExtension vscode.css-language-features, startup: false, activationEvent: 'onLanguage:css'
+2026-05-01 01:05:08.971 [info] ExtensionService#_doActivateExtension vscode.git-base, startup: false, activationEvent: 'onLanguage:ignore'
+2026-05-01 01:05:09.373 [info] ExtHostSearch [cursorIgnore] internal fileSearch start reason=cursorIgnoreCheck roots=1 include=**/.cursorignore maxResults=0 numThreads=(default) folderQueries=[{"cwd":"/root","disregardIgnoreFiles":false,"disregardParentIgnoreFiles":true,"disregardGlobalIgnoreFiles":true,"ignoreSymlinks":false,"rgNoIgnore":false,"rgNoIgnoreParent":true,"rgNoIgnoreGlobal":true,"rgFollow":true}]
+2026-05-01 01:05:09.563 [info] Extension activated success: vscode.tunnel-forwarding — 48ms (code loading: 10ms, activate call: 0ms, activate resolved: 38ms)
+2026-05-01 01:05:09.563 [info] Extension activated success: vscode.emmet — 67ms (code loading: 29ms, activate call: 12ms, activate resolved: 26ms)
+2026-05-01 01:05:09.563 [info] Extension activated success: vscode.php-language-features — 67ms (code loading: 41ms, activate call: 5ms, activate resolved: 21ms)
+2026-05-01 01:05:09.563 [info] Extension activated success: vscode.extension-editing — 71ms (code loading: 50ms, activate call: 2ms, activate resolved: 19ms)
+2026-05-01 01:05:09.563 [info] Extension activated success: vscode.git-base — 153ms (code loading: 153ms, activate call: 0ms, activate resolved: 0ms)
+2026-05-01 01:05:09.775 [info] Extension activated success: vscode.markdown-language-features — 353ms (code loading: 122ms, activate call: 11ms, activate resolved: 220ms)
+2026-05-01 01:05:09.785 [info] ExtHostSearch /root/.cursor-server/bin/linux-x64/3e548838cf824b70851dd3ef27d0c6aae371b3f0/node_modules/@vscode/ripgrep/bin/rg --files --hidden --case-sensitive --no-require-git -g '**/.cursorignore' -g '!**/.git' -g '!**/.svn' -g '!**/.hg' -g '!**/.DS_Store' -g '!**/Thumbs.db' -g '!**/node_modules' -g '!**/bower_components' -g '!**/*.code-search' --no-ignore-parent --follow --no-config --no-ignore-global
+ - cwd: /root
+ - Sibling clauses: {}
+2026-05-01 01:05:09.796 [info] Extension activated success: vscode.css-language-features — 393ms (code loading: 152ms, activate call: 8ms, activate resolved: 233ms)
+2026-05-01 01:05:09.797 [info] ExtensionService#_doActivateExtension anysphere.cursor-agent-exec, startup: true, activationEvent: '*'
+2026-05-01 01:05:09.797 [info] ExtensionService#_doActivateExtension anysphere.cursor-checkout, startup: true, activationEvent: '*'
+2026-05-01 01:05:09.797 [info] ExtensionService#_doActivateExtension anysphere.cursor-polyfills-remote, startup: true, activationEvent: '*'
+2026-05-01 01:05:09.798 [info] ExtensionService#_doActivateExtension vscode.git, startup: true, activationEvent: '*'
+2026-05-01 01:05:09.799 [info] ExtensionService#_doActivateExtension vscode.github, startup: true, activationEvent: '*'
+2026-05-01 01:05:10.190 [info] ExtHostSearch Search finished. Stats: {"cmdTime":415,"fileWalkTime":415,"directoriesWalked":0,"filesWalked":0,"cmdResultCount":0}
+2026-05-01 01:05:10.199 [info] ExtHostSearch [cursorIgnore] internal fileSearch done in 826ms limitHit=false failed=false resultCount=0 cmdTime=415 fileWalkTime=415 providerTime=(unknown)
+2026-05-01 01:05:10.520 [info] ExtensionService#_doActivateExtension anysphere.cursor-mcp, startup: false, activationEvent: 'api', root cause: anysphere.cursor-agent-exec
+2026-05-01 01:05:10.762 [info] Extension activated success: anysphere.cursor-checkout — 519ms (code loading: 301ms, activate call: 1ms, activate resolved: 217ms)
+2026-05-01 01:05:10.762 [info] Extension activated success: anysphere.cursor-polyfills-remote — 538ms (code loading: 321ms, activate call: 0ms, activate resolved: 217ms)
+2026-05-01 01:05:10.762 [info] Extension activated success: vscode.github — 598ms (code loading: 377ms, activate call: 1ms, activate resolved: 220ms)
+2026-05-01 01:05:10.929 [info] Extension activated success: vscode.git — 769ms (code loading: 361ms, activate call: 2ms, activate resolved: 406ms)
+2026-05-01 01:05:11.071 [info] Extension activated success: anysphere.cursor-mcp — 399ms (code loading: 218ms, activate call: 1ms, activate resolved: 180ms)
+2026-05-01 01:05:11.224 [warning] [Decorations] CAPPING events from decorations provider vscode.git 10000
+2026-05-01 01:05:12.876 [warning] [Decorations] CAPPING events from decorations provider vscode.git 10000
+2026-05-01 01:05:15.400 [info] Extension activated success: anysphere.cursor-agent-exec — 5189ms (code loading: 300ms, activate call: 9ms, activate resolved: 4880ms)
+2026-05-01 01:05:15.401 [info] Eager extensions activated
+2026-05-01 01:05:15.401 [info] ExtensionService#_doActivateExtension anysphere.cursor-commits, startup: false, activationEvent: 'onStartupFinished'
+2026-05-01 01:05:15.401 [info] ExtensionService#_doActivateExtension anysphere.cursor-explorer, startup: false, activationEvent: 'onStartupFinished'
+2026-05-01 01:05:15.401 [info] ExtensionService#_doActivateExtension anysphere.cursor-retrieval, startup: false, activationEvent: 'onStartupFinished'
+2026-05-01 01:05:15.401 [info] ExtensionService#_doActivateExtension anysphere.cursor-shadow-workspace, startup: false, activationEvent: 'onStartupFinished'
+2026-05-01 01:05:15.402 [info] ExtensionService#_doActivateExtension vscode.debug-auto-launch, startup: false, activationEvent: 'onStartupFinished'
+2026-05-01 01:05:15.402 [info] ExtensionService#_doActivateExtension vscode.merge-conflict, startup: false, activationEvent: 'onStartupFinished'
+2026-05-01 01:05:16.163 [info] [ExtHostCursorExplorerProviderService] ExplorerProvider registered in ext host
+2026-05-01 01:05:16.185 [info] Extension activated success: anysphere.cursor-explorer — 121ms (code loading: 117ms, activate call: 1ms, activate resolved: 3ms)
+2026-05-01 01:05:16.186 [info] Extension activated success: anysphere.cursor-shadow-workspace — 359ms (code loading: 357ms, activate call: 0ms, activate resolved: 2ms)
+2026-05-01 01:05:16.186 [info] Extension activated success: vscode.debug-auto-launch — 361ms (code loading: 358ms, activate call: 1ms, activate resolved: 2ms)
+2026-05-01 01:05:16.186 [info] Extension activated success: vscode.merge-conflict — 376ms (code loading: 371ms, activate call: 1ms, activate resolved: 4ms)
+2026-05-01 01:05:16.186 [info] Extension activated success: anysphere.cursor-retrieval — 337ms (code loading: 316ms, activate call: 1ms, activate resolved: 20ms)
+2026-05-01 01:05:16.186 [info] Extension activated success: anysphere.cursor-commits — 138ms (code loading: 115ms, activate call: 0ms, activate resolved: 23ms)
+2026-05-01 01:05:16.282 [info] [ExtHostCursorExplorerProviderService] Main thread provider registration acknowledged
+2026-05-01 01:11:02.925 [info] ExtensionService#_doActivateExtension vscode.configuration-editing, startup: false, activationEvent: 'onLanguage:jsonc'
+2026-05-01 01:11:02.925 [info] ExtensionService#_doActivateExtension vscode.json-language-features, startup: false, activationEvent: 'onLanguage:jsonc'
+2026-05-01 01:11:02.925 [info] ExtensionService#_doActivateExtension vscode.typescript-language-features, startup: false, activationEvent: 'onLanguage:jsonc'
+2026-05-01 01:11:03.136 [info] Extension activated success: vscode.configuration-editing — 15ms (code loading: 9ms, activate call: 0ms, activate resolved: 6ms)
+2026-05-01 01:11:03.136 [info] Extension activated success: vscode.typescript-language-features — 100ms (code loading: 89ms, activate call: 5ms, activate resolved: 6ms)
+2026-05-01 01:11:03.323 [info] Extension activated success: vscode.json-language-features — 303ms (code loading: 52ms, activate call: 1ms, activate resolved: 250ms)
+2026-05-01 02:09:41.188 [info] ExtensionService#_doActivateExtension vscode.npm, startup: false, activationEvent: 'onTerminalQuickFixRequest:ms-vscode.npm-command'
+2026-05-01 02:09:41.491 [info] Extension activated success: vscode.npm — 242ms (code loading: 23ms, activate call: 1ms, activate resolved: 218ms)
+2026-05-01 03:11:53.184 [warning] [Decorations] CAPPING events from decorations provider vscode.git 10000
+2026-05-01 03:14:02.021 [warning] [Decorations] CAPPING events from decorations provider vscode.git 10177
+2026-05-01 03:14:03.734 [error] Error: command '_chat.editSessions.accept' not found
+    at bem._tryExecuteCommand (vscode-file://vscode-app/Applications/Cursor.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:41602:3448)
+    at bem.executeCommandImpl (vscode-file://vscode-app/Applications/Cursor.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:41602:2950)

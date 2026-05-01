@@ -46,19 +46,19 @@ class Printonet_Customizer_Order_Meta
     {
         if (!empty($cart_item['printonet_design_preview_url'])) {
             $item_data[] = [
-                'name' => __('Design Preview', 'printonet-storefront'),
+                'name' => __('Design Preview', 'printonet-theme'),
                 'value' => esc_url($cart_item['printonet_design_preview_url']),
                 'display' => sprintf(
                     '<a href="%s" target="_blank" rel="noopener">%s</a>',
                     esc_url($cart_item['printonet_design_preview_url']),
-                    esc_html__('View design', 'printonet-storefront')
+                    esc_html__('View design', 'printonet-theme')
                 ),
             ];
         }
 
         if (!empty($cart_item['printonet_print_file_url'])) {
             $item_data[] = [
-                'name' => __('Print File', 'printonet-storefront'),
+                'name' => __('Print File', 'printonet-theme'),
                 'value' => esc_url($cart_item['printonet_print_file_url']),
             ];
         }

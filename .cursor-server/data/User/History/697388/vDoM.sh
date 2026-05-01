@@ -1,0 +1,107 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ENV_FILE="${1:-.env}"
+if [[ ! -f "$ENV_FILE" ]]; then
+  echo "Missing env file: $ENV_FILE"
+  exit 1
+fi
+
+set -a
+source "$ENV_FILE"
+set +a
+
+if [[ -z "${WP_URL:-}" || -z "${PLATFORM_HMAC_SECRET:-}" || -z "${SUPPLIER_WEBHOOK_SECRET:-}" ]]; then
+  echo "WP_URL, PLATFORM_HMAC_SECRET, and SUPPLIER_WEBHOOK_SECRET are required"
+  exit 1
+fi
+
+sign() {
+  local timestamp="$1"
+  local body="$2"
+  printf "%s.%s" "$timestamp" "$body" | openssl dgst -sha256 -hmac "$PLATFORM_HMAC_SECRET" -hex | awk '{print $2}'
+}
+
+signed_post() {
+  local path="$1"
+  local body="$2"
+  local ts
+  ts="$(date +%s)"
+  local sig
+  sig="$(sign "$ts" "$body")"
+
+  curl -sS -X POST "${WP_URL}${path}" \
+    -H "Content-Type: application/json" \
+    -H "X-Printonet-Timestamp: ${ts}" \
+    -H "X-Printonet-Signature: ${sig}" \
+    --data "$body"
+}
+
+signed_get() {
+  local path="$1"
+  local body=""
+  local ts
+  ts="$(date +%s)"
+  local sig
+  sig="$(sign "$ts" "$body")"
+
+  curl -sS -X GET "${WP_URL}${path}" \
+    -H "X-Printonet-Timestamp: ${ts}" \
+    -H "X-Printonet-Signature: ${sig}"
+}
+
+SYNC_BODY="$(cat <<JSON
+{
+  "supplier": "printonet_internal",
+  "credentials": {
+    "base_url": "${INTERNAL_SUPPLIER_API_URL}"$(if [[ -n "${INTERNAL_SUPPLIER_TENANT_SLUG:-}" ]]; then printf ',\n    "tenant_slug": "%s"' "${INTERNAL_SUPPLIER_TENANT_SLUG}"; fi)
+  }
+}
+JSON
+)"
+
+echo "Queueing supplier sync..."
+SYNC_RESPONSE="$(signed_post "/wp-json/printonet/v1/suppliers/sync" "$SYNC_BODY")"
+echo "$SYNC_RESPONSE"
+
+JOB_ID="$(python3 - <<'PY' "$SYNC_RESPONSE"
+import json,sys
+try:
+    data=json.loads(sys.argv[1])
+    print(data.get("job_id",""))
+except Exception:
+    print("")
+PY
+)"
+
+if [[ -z "$JOB_ID" ]]; then
+  echo "No job_id returned from sync endpoint"
+  exit 1
+fi
+
+echo "Polling sync status for job_id=${JOB_ID}..."
+for _ in 1 2 3 4 5; do
+  STATUS_RESPONSE="$(signed_get "/wp-json/printonet/v1/suppliers/sync-status/${JOB_ID}")"
+  echo "$STATUS_RESPONSE"
+  STATUS="$(python3 - <<'PY' "$STATUS_RESPONSE"
+import json,sys
+try:
+    data=json.loads(sys.argv[1])
+    print(data.get("job",{}).get("status",""))
+except Exception:
+    print("")
+PY
+)"
+  if [[ "$STATUS" == "success" || "$STATUS" == "failed" ]]; then
+    break
+  fi
+  sleep 2
+done
+
+WEBHOOK_BODY='{"event":"stock_price_update","blog_id":1,"items":[{"sku":"TSHIRT-001","price":"29.99","stock":5}]}'
+echo "Sending supplier webhook delta..."
+curl -sS -X POST "${WP_URL}/wp-json/printonet/v1/suppliers/webhook" \
+  -H "Content-Type: application/json" \
+  -H "X-Printonet-Webhook-Secret: ${SUPPLIER_WEBHOOK_SECRET}" \
+  --data "$WEBHOOK_BODY"
+echo

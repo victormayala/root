@@ -1,0 +1,12 @@
+---
+pid: 180016
+cwd: /root
+last_command: git config --global --list | grep user
+last_exit_code: 0
+---
+root@srv1619758:~# git config --global user.name "victormayala"
+git config --global user.email "vicmanayaari@gmail.com"
+root@srv1619758:~# git config --global --list | grep user
+user.name=victormayala
+user.email=vicmanayaari@gmail.com
+root@srv1619758:~#

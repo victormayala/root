@@ -9,6 +9,75 @@ add_action('after_setup_theme', static function () {
     add_theme_support('post-thumbnails');
 });
 
+add_action('after_switch_theme', static function (): void {
+    if (function_exists('wc_clear_template_cache')) {
+        wc_clear_template_cache();
+    }
+});
+
+/**
+ * Bump WooCommerce template path cache when child overrides change — works without wp-admin / WP‑CLI.
+ *
+ * Uses file content hashes (not mtimes): CI/deploy often preserves timestamps, which blocked flushes before.
+ * Full-page / CDN caches are still separate from this.
+ */
+function printonet_theme_wc_template_override_fingerprint(): string
+{
+    $dir = get_stylesheet_directory();
+    $files = [
+        $dir . '/functions.php',
+        $dir . '/style.css',
+        $dir . '/woocommerce/loop/header.php',
+        $dir . '/woocommerce/global/breadcrumb.php',
+    ];
+    $parts = [];
+    foreach ($files as $path) {
+        if (!is_readable($path)) {
+            $parts[] = basename($path) . ':missing';
+
+            continue;
+        }
+        $hash = md5_file($path);
+        $parts[] = basename($path) . ':' . ($hash !== false ? $hash : 'read_fail');
+    }
+
+    return md5(implode('|', $parts));
+}
+
+add_action('wp_loaded', static function (): void {
+    if (!function_exists('wc_clear_template_cache')) {
+        return;
+    }
+
+    $fp = printonet_theme_wc_template_override_fingerprint();
+    $opt = 'printonet_theme_wc_tpl_fp';
+    $prev = get_option($opt, '');
+
+    if ($prev !== $fp) {
+        wc_clear_template_cache();
+        update_option($opt, $fp, false);
+    }
+}, 30);
+
+/**
+ * WooCommerce caches absolute paths in {@see wc_get_template()} — on cache HIT it never re-runs
+ * {@see wc_locate_template()}, so new child overrides can appear “stuck” until this filter runs.
+ */
+add_filter('wc_get_template', static function ($template, $template_name, $args, $template_path, $default_path) {
+    unset($args, $template_path, $default_path);
+    $forced = [
+        'loop/header.php',
+        'global/breadcrumb.php',
+    ];
+    if (!in_array($template_name, $forced, true)) {
+        return $template;
+    }
+
+    $child = trailingslashit(get_stylesheet_directory()) . 'woocommerce/' . $template_name;
+
+    return is_readable($child) ? $child : $template;
+}, 999, 5);
+
 add_action('init', static function () {
     if (!function_exists('storefront_site_branding')) {
         return;
@@ -156,23 +225,181 @@ function printonet_theme_placeholder_image(string $seed = 'print'): string
     return 'https://picsum.photos/seed/' . rawurlencode($seed) . '/1400/900';
 }
 
-
-add_action('wp', static function () {
+/**
+ * Shop page, product taxonomy archives, or product post-type archive (covers misconfigured shop permalinks).
+ */
+function printonet_theme_is_product_listing(): bool
+{
     if (!function_exists('is_shop')) {
+        return false;
+    }
+
+    if (is_shop() || is_product_taxonomy() || is_post_type_archive('product')) {
+        return true;
+    }
+
+    $shop_id = function_exists('wc_get_page_id') ? (int) wc_get_page_id('shop') : 0;
+
+    return $shop_id > 0 && function_exists('is_page') && is_page($shop_id);
+}
+
+/**
+ * Block outputs to remove on product listing URLs.
+ *
+ * The Shop screen is often a Page in the Site Editor, so the visible H1 is frequently
+ * {@see core_post_title} — not {@see core_query_title} with type "archive".
+ */
+function printonet_theme_should_strip_plp_block(string $block_name, array $attrs): bool
+{
+    if ($block_name === 'woocommerce/breadcrumbs') {
+        return true;
+    }
+
+    if ($block_name === 'core/query-title') {
+        return true;
+    }
+
+    if ($block_name === 'core/post-title') {
+        $ns = $attrs['__woocommerceNamespace'] ?? '';
+        if ($ns !== '' && strpos($ns, 'woocommerce/product-collection/') === 0) {
+            return false;
+        }
+
+        return true;
+    }
+
+    return false;
+}
+
+/**
+ * Classic templates: strip sidebar + breadcrumb + default archive header once the main query is resolved.
+ * (template_redirect is more reliable than wp for is_shop() / taxonomy checks.)
+ */
+add_action('template_redirect', static function (): void {
+    if (!printonet_theme_is_product_listing()) {
         return;
     }
 
-    if (is_shop() || is_product_taxonomy()) {
-        remove_action('storefront_sidebar', 'storefront_get_sidebar', 10);
+    remove_action('storefront_sidebar', 'storefront_get_sidebar', 10);
+
+    foreach ([10, 20, 5] as $priority) {
+        remove_action('storefront_before_content', 'woocommerce_breadcrumb', $priority);
+        remove_action('woocommerce_before_main_content', 'woocommerce_breadcrumb', $priority);
     }
-});
+
+    /*
+     * Keep woocommerce_product_taxonomy_archive_header registered so wc_get_template('loop/header.php')
+     * loads our theme override (removing it bypassed the template entirely).
+     */
+}, 998);
+
+/**
+ * PLP: hide archive H1 if anything still prints it (edge cases / plugins).
+ */
+add_filter('woocommerce_show_page_title', static function ($show) {
+    if (printonet_theme_is_product_listing()) {
+        return false;
+    }
+
+    return $show;
+}, 999);
+
+/**
+ * Plain-text title from {@see woocommerce_page_title()} (classic templates, breadcrumbs, etc.).
+ */
+add_filter('woocommerce_page_title', static function ($title) {
+    if (printonet_theme_is_product_listing()) {
+        return '';
+    }
+
+    return $title;
+}, 999);
+
+/**
+ * Blockified Product Catalog (`templates/blockified/archive-product.html`) renders breadcrumbs and
+ * query-title as blocks — those never go through Storefront’s storefront_before_content hook or
+ * woocommerce_shop_loop_header.
+ */
+add_filter('pre_render_block', static function ($pre_render, array $parsed_block, $parent_block = null) {
+    if ($pre_render !== null) {
+        return $pre_render;
+    }
+
+    if (!printonet_theme_is_product_listing()) {
+        return null;
+    }
+
+    $name = $parsed_block['blockName'] ?? '';
+
+    if (!printonet_theme_should_strip_plp_block($name, $parsed_block['attrs'] ?? [])) {
+        return null;
+    }
+
+    return '';
+}, 999, 3);
+
+add_filter('render_block', static function ($block_content, array $block) {
+    if (!printonet_theme_is_product_listing()) {
+        return $block_content;
+    }
+
+    $name = $block['blockName'] ?? '';
+
+    if (!printonet_theme_should_strip_plp_block($name, $block['attrs'] ?? [])) {
+        return $block_content;
+    }
+
+    return '';
+}, 999, 2);
+
+/**
+ * Absolute fallback when caching / edge runs bypass PHP removals (visibility only).
+ */
+add_action('wp_head', static function (): void {
+    $plp = function_exists('printonet_theme_is_product_listing') && printonet_theme_is_product_listing();
+    if (!$plp && function_exists('is_shop')) {
+        $plp = is_shop() || is_product_taxonomy()
+            || (function_exists('is_post_type_archive') && is_post_type_archive('product'));
+    }
+    if (!$plp) {
+        return;
+    }
+    ?>
+<style id="printonet-plp-hide-chrome">
+/* PLP: breadcrumb row + archive title chrome (Storefront wrapper, WC blocks, classic header). */
+#page .storefront-breadcrumb,
+#page > .storefront-breadcrumb,
+#page .wc-block-breadcrumbs,
+main#main.site-main > header.woocommerce-products-header,
+.post-type-archive-product .woocommerce-products-header,
+.tax-product_cat .woocommerce-products-header,
+.tax-product_tag .woocommerce-products-header,
+body[class*="tax-pa_"] .woocommerce-products-header,
+body.woocommerce-shop .woocommerce-products-header,
+body.woocommerce-shop main .wp-block-query-title,
+.post-type-archive-product main .wp-block-query-title,
+.tax-product_cat main .wp-block-query-title,
+.tax-product_tag main .wp-block-query-title,
+body[class*="tax-pa_"] main .wp-block-query-title {
+  display: none !important;
+  visibility: hidden !important;
+  height: 0 !important;
+  min-height: 0 !important;
+  max-height: 0 !important;
+  overflow: hidden !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  clip: rect(0, 0, 0, 0) !important;
+  position: absolute !important;
+  width: 1px !important;
+}
+</style>
+    <?php
+}, 99999);
 
 add_filter('body_class', static function (array $classes): array {
-    if (!function_exists('is_shop')) {
-        return $classes;
-    }
-
-    if (is_shop() || is_product_taxonomy()) {
+    if (printonet_theme_is_product_listing()) {
         $classes = array_values(array_diff($classes, ['right-sidebar', 'left-sidebar']));
         if (!in_array('storefront-full-width-content', $classes, true)) {
             $classes[] = 'storefront-full-width-content';

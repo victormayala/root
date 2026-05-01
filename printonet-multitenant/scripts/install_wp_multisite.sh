@@ -67,12 +67,10 @@ if [[ -f "${REPO_ROOT}/assets/favicon.ico" ]]; then
   cp -f "${REPO_ROOT}/assets/favicon.ico" "${REPO_ROOT}/wp-content/mu-plugins/printonet-core/assets/favicon.ico"
 fi
 rsync -a --delete "${REPO_ROOT}/wp-content/mu-plugins/" "${WP_PATH}/wp-content/mu-plugins/"
-rsync -a --delete "${REPO_ROOT}/wp-content/themes/printonet-storefront/" "${WP_PATH}/wp-content/themes/printonet-storefront/"
 rsync -a --delete "${REPO_ROOT}/wp-content/themes/printonet-theme/" "${WP_PATH}/wp-content/themes/printonet-theme/"
 
 # Allow themes network-wide so tenant subsites can activate the child; activate child on the main network site.
 sudo -u www-data wp theme enable storefront --network --allow-root
-sudo -u www-data wp theme enable printonet-storefront --network --allow-root
 sudo -u www-data wp theme enable printonet-theme --network --allow-root
 sudo -u www-data wp theme activate printonet-theme --url="$WP_URL" --allow-root
 

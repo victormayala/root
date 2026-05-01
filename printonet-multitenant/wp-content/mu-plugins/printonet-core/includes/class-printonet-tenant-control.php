@@ -505,7 +505,7 @@ class Printonet_Tenant_Control
     {
         if (self::is_suspended() && function_exists('wc_add_notice')) {
             wc_add_notice(
-                __('Checkout is disabled while this store is suspended.', 'printonet-storefront'),
+                __('Checkout is disabled while this store is suspended.', 'printonet-theme'),
                 'error'
             );
         }

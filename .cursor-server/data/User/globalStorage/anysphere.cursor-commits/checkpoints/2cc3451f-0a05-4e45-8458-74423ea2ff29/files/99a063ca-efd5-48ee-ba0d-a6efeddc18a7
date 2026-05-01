@@ -1,0 +1,22 @@
+<?php
+/**
+ * Product listing: suppress breadcrumb entirely (blocks + hooks still call woocommerce_breadcrumb()).
+ *
+ * Non–product-listing views delegate to the WooCommerce core template (avoid wc_get_template recursion).
+ *
+ * @package WooCommerce/Templates
+ */
+
+defined('ABSPATH') || exit;
+
+if (
+    function_exists('printonet_theme_is_product_listing')
+    && printonet_theme_is_product_listing()
+) {
+    return;
+}
+
+$core = WC()->plugin_path() . '/templates/global/breadcrumb.php';
+if (is_readable($core)) {
+    include $core;
+}
