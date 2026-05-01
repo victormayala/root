@@ -86,3 +86,9 @@
 2026-05-01 03:18:09.562 [error] Error: command '_chat.editSessions.accept' not found
     at bem._tryExecuteCommand (vscode-file://vscode-app/Applications/Cursor.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:41602:3448)
     at bem.executeCommandImpl (vscode-file://vscode-app/Applications/Cursor.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:41602:2950)
+2026-05-01 03:18:54.834 [error] Error: command '_chat.editSessions.accept' not found
+    at bem._tryExecuteCommand (vscode-file://vscode-app/Applications/Cursor.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:41602:3448)
+    at bem.executeCommandImpl (vscode-file://vscode-app/Applications/Cursor.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:41602:2950)
+2026-05-01 03:20:11.956 [error] Error: read ECONNRESET
+	at Pipe.onStreamRead (node:internal/stream_base_commons:218:20)
+	at Pipe.callbackTrampoline (node:internal/async_hooks:130:17)
